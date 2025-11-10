@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  firstName    String?
+  lastName     String?
+  email        String?
+  points       Int      @default(0)
+  role         UserRole @default(CLIENT)
+  // Поля для мастеров
+  rating       Float?   @default(0)
+  reviewsCount Int?     @default(0)
+  isActive     Boolean? @default(true)
+  cityId       String?
+  city         City?    @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  // Push notification token
+  pushToken    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ordersAsClient Order[]    @relation("ClientOrders")
+  ordersAsMaster Order[]    @relation("MasterOrders")
+  referrals      Referral[] @relation("Referrer")
+  referred       Referral?  @relation("Referred")
+
+  @@index([role])
+  @@map("users")
+}
+
+enum UserRole {
+  CLIENT
+  MASTER
+  ADMIN
+}
+
+model City {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  region    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@index([name])
+  @@map("cities")
+}
+
+model AuthCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+  @@map("auth_codes")
+}
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services Service[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  price       Float?
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orders   OrderItem[]
+
+  @@unique([categoryId, slug])
+  @@map("services")
+}
+
+model Order {
+  id              String       @id @default(cuid())
+  orderNumber     String       @unique
+  clientId        String?
+  masterId        String?
+  status          OrderStatus  @default(PENDING)
+  recipient       String       @default("me")
+  clientName      String
+  clientPhone     String
+  city            String
+  address         String
+  apartment       String?
+  isPrivateHouse  Boolean      @default(false)
+  urgency         OrderUrgency @default(URGENT)
+  scheduledDate   DateTime?
+  scheduledTime   String?
+  totalPrice      Float?
+  workDescription String?
+  warranty        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  completedAt     DateTime?
+
+  client User?       @relation("ClientOrders", fields: [clientId], references: [id], onDelete: SetNull)
+  master User?       @relation("MasterOrders", fields: [masterId], references: [id], onDelete: SetNull)
+  items  OrderItem[]
+  steps  OrderStep[]
+
+  @@index([clientId])
+  @@index([masterId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  serviceId String
+  quantity  Int      @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model OrderStep {
+  id          String     @id @default(cuid())
+  orderId     String
+  title       String
+  description String?
+  status      StepStatus @default(PENDING)
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_steps")
+}
+
+model Referral {
+  id         String   @id @default(cuid())
+  referrerId String
+  referredId String   @unique
+  points     Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@map("referrals")
+}
+
+model PromoCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  discount     Float
+  discountType String // "percentage" | "fixed"
+  minAmount    Float?
+  maxDiscount  Float?
+  expiresAt    DateTime?
+  usageLimit   Int?
+  usedCount    Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("promo_codes")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderUrgency {
+  URGENT
+  SCHEDULED
+}
+
+enum StepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
