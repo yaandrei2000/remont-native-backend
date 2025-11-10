@@ -1,48 +1,42 @@
-FROM node:20.17.0 AS base
+# Используем официальный Node.js образ
+FROM node:18-alpine AS builder
 
-RUN apt-get update && \
-    apt-get install -y \
-    make \
-    gcc \
-    g++ \
-    python3 \
-    python3-pip \
-    pkg-config \
-    libpixman-1-dev \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libgif-dev \
-    librsvg2-dev
-
-RUN npm install -g node-gyp
-
-RUN npm install -g npm@latest
-
-RUN npm install -g @nestjs/cli
-
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Копируем файлы зависимостей
+COPY package*.json ./
+COPY prisma ./prisma/
 
+# Устанавливаем зависимости
 RUN npm ci
 
-FROM base AS build
-
+# Копируем исходный код
 COPY . .
 
+# Генерируем Prisma Client
 RUN npx prisma generate
 
+# Собираем приложение
 RUN npm run build
 
-FROM base AS production
+# Продакшен образ
+FROM node:18-alpine AS production
 
 WORKDIR /app
 
-COPY --from=build /app/package.json /app/package-lock.json ./
+# Копируем package.json и устанавливаем только production зависимости
+COPY package*.json ./
+COPY prisma ./prisma/
 
-RUN npm ci --only=production
+RUN npm ci --only=production && npx prisma generate
 
-COPY --from=build /app/dist ./dist
+# Копируем собранное приложение из builder
+COPY --from=builder /app/dist ./dist
 
-CMD ["node", "dist/main"]
-EXPOSE 4000
+# Открываем порт
+EXPOSE 3000
+
+# Запускаем приложение
+CMD ["node", "dist/src/main"]
+
