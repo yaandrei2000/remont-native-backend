@@ -43,7 +43,6 @@ COPY --from=build /app/package.json /app/package-lock.json ./
 RUN npm ci --only=production
 
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma/generated ./prisma/generated
 
 CMD ["node", "dist/main"]
 EXPOSE 4000
