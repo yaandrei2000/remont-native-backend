@@ -34,9 +34,8 @@ RUN npm ci --only=production && npx prisma generate
 # Копируем собранное приложение из builder
 COPY --from=builder /app/dist ./dist
 
-# Открываем порт
-EXPOSE 3000
-
 # Запускаем приложение
 CMD ["node", "dist/src/main"]
+
+EXPOSE 3000
 
