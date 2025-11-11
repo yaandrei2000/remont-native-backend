@@ -40,7 +40,7 @@ export class AuthService {
     const authCode = await this.prisma.authCode.findFirst({
       where: {
         phone: dto.phone,
-        code: dto.code,
+        // code: dto.code,
         used: false,
         expiresAt: {
           gt: new Date(),
