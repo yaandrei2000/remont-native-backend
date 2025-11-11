@@ -7,8 +7,10 @@ async function bootstrap() {
 
   // Включаем CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:8081',
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true, // Разрешаем все origins для мобильных приложений
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   // Глобальная валидация

@@ -10,7 +10,12 @@ export class PromoCodesController {
 
   @Get()
   async getAllPromoCodes() {
-    return this.promoCodesService.getAllPromoCodes();
+    try {
+      return await this.promoCodesService.getAllPromoCodes();
+    } catch (error) {
+      console.error('Error in getAllPromoCodes:', error);
+      throw error;
+    }
   }
 
   @Post('activate')

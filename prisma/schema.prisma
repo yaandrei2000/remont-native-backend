@@ -38,6 +38,8 @@ model User {
   masterApplication     MasterApplication?
   processedApplications MasterApplication[]  @relation("ProcessedApplications")
   promoCodeUsages       PromoCodeUsage[]
+  chatsAsUser           Chat[]                @relation("UserChats")
+  chatsAsManager        Chat[]                @relation("ManagerChats")
 
   @@index([role])
   @@index([referralCode])
@@ -300,4 +302,44 @@ enum MasterApplicationStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum ChatStatus {
+  NEW
+  ACTIVE
+  CLOSED
+}
+
+model Chat {
+  id        String     @id @default(cuid())
+  userId    String
+  managerId String?
+  status    ChatStatus @default(NEW)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  closedAt  DateTime?
+
+  user    User      @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
+  manager User?     @relation("ManagerChats", fields: [managerId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@index([managerId])
+  @@index([status])
+  @@map("chats")
+}
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  chatId    String
+  text      String
+  isFromUser Boolean @default(true) // true - от пользователя, false - от менеджера
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([createdAt])
+  @@map("chat_messages")
 }

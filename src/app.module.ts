@@ -11,6 +11,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { StorageModule } from './libs/storage/storage.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { ReferralsModule } from './referrals/referrals.module';
+import { ChatsModule } from './chats/chats.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ReferralsModule } from './referrals/referrals.module';
     NotificationsModule,
     PromoCodesModule,
     ReferralsModule,
+    ChatsModule,
   ]
 })
 export class AppModule {}

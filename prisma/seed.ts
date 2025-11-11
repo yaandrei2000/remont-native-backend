@@ -290,39 +290,6 @@ async function main() {
     },
   });
 
-  const promoCode2 = await prisma.promoCode.upsert({
-    where: { code: 'FIRSTORDER' },
-    update: {},
-    create: {
-      code: 'FIRSTORDER',
-      description: '200 баллов за первую заявку',
-      points: 200,
-      isActive: true,
-    },
-  });
-
-  const promoCode3 = await prisma.promoCode.upsert({
-    where: { code: 'WINTER2024' },
-    update: {},
-    create: {
-      code: 'WINTER2024',
-      description: '300 баллов за заказ зимой',
-      points: 300,
-      isActive: true,
-    },
-  });
-
-  const promoCode4 = await prisma.promoCode.upsert({
-    where: { code: 'FRIEND500' },
-    update: {},
-    create: {
-      code: 'FRIEND500',
-      description: '500 баллов за приглашение друга',
-      points: 500,
-      isActive: true,
-    },
-  });
-
   console.log('✅ Seeding completed!');
 }
 
