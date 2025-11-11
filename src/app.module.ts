@@ -12,6 +12,7 @@ import { StorageModule } from './libs/storage/storage.module';
 import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { ChatsModule } from './chats/chats.module';
+import { HomePageModule } from './home-page/home-page.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ChatsModule } from './chats/chats.module';
     PromoCodesModule,
     ReferralsModule,
     ChatsModule,
+    HomePageModule,
   ]
 })
 export class AppModule {}
