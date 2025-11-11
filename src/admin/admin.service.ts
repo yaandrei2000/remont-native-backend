@@ -9,7 +9,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { ConfigService } from '@nestjs/config';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class AdminService {
@@ -412,7 +412,7 @@ export class AdminService {
     // Если передан файл, загружаем его в S3
     if (imageFile) {
       const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
-      const fileName = `categories/${uuidv4()}.${fileExtension}`;
+      const fileName = `categories/${randomUUID()}.${fileExtension}`;
       
       await this.storageService.upload(
         imageFile.buffer,
@@ -479,7 +479,7 @@ export class AdminService {
 
       // Загружаем новое изображение
       const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
-      const fileName = `categories/${uuidv4()}.${fileExtension}`;
+      const fileName = `categories/${randomUUID()}.${fileExtension}`;
       
       await this.storageService.upload(
         imageFile.buffer,
@@ -685,7 +685,7 @@ export class AdminService {
     // Если передан файл, загружаем его в S3
     if (imageFile) {
       const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
-      const fileName = `services/${uuidv4()}.${fileExtension}`;
+      const fileName = `services/${randomUUID()}.${fileExtension}`;
       
       await this.storageService.upload(
         imageFile.buffer,
@@ -759,7 +759,7 @@ export class AdminService {
 
       // Загружаем новое изображение
       const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
-      const fileName = `services/${uuidv4()}.${fileExtension}`;
+      const fileName = `services/${randomUUID()}.${fileExtension}`;
       
       await this.storageService.upload(
         imageFile.buffer,
