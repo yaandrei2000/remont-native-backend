@@ -20,6 +20,14 @@ export class UpdateServiceDto {
   @IsString()
   @IsOptional()
   categoryId?: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+
+  @IsString()
+  @IsOptional()
+  time?: string;
 }
 
 

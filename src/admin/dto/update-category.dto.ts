@@ -16,6 +16,10 @@ export class UpdateCategoryDto {
   @IsString()
   @IsOptional()
   icon?: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
 }
 
 

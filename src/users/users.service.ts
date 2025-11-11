@@ -1,5 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateMasterApplicationDto } from '../admin/dto/create-master-application.dto';
 
 @Injectable()
 export class UsersService {
@@ -92,6 +93,78 @@ export class UsersService {
         pushToken: true,
       },
     });
+  }
+
+  async createMasterApplication(userId: string, dto: CreateMasterApplicationDto) {
+    // Проверяем, есть ли уже заявка у пользователя
+    const existingApplication = await this.prisma.masterApplication.findUnique({
+      where: { userId },
+    });
+
+    if (existingApplication) {
+      if (existingApplication.status === 'PENDING') {
+        throw new BadRequestException('You already have a pending application');
+      }
+      if (existingApplication.status === 'APPROVED') {
+        throw new BadRequestException('You are already a master');
+      }
+    }
+
+    // Проверяем, не является ли пользователь уже мастером
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (user?.role === 'MASTER') {
+      throw new BadRequestException('You are already a master');
+    }
+
+    // Создаем или обновляем заявку
+    const application = await this.prisma.masterApplication.upsert({
+      where: { userId },
+      create: {
+        userId,
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email,
+        experience: dto.experience,
+        specialties: dto.specialties,
+        description: dto.description,
+        status: 'PENDING',
+      },
+      update: {
+        name: dto.name,
+        phone: dto.phone,
+        email: dto.email,
+        experience: dto.experience,
+        specialties: dto.specialties,
+        description: dto.description,
+        status: 'PENDING',
+        processedAt: null,
+        processedById: null,
+        rejectionReason: null,
+      },
+    });
+
+    return application;
+  }
+
+  async getMasterApplication(userId: string) {
+    const application = await this.prisma.masterApplication.findUnique({
+      where: { userId },
+      include: {
+        processedBy: {
+          select: {
+            id: true,
+            phone: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    return application;
   }
 }
 

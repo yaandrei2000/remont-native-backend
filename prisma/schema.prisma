@@ -26,15 +26,21 @@ model User {
   city         City?    @relation(fields: [cityId], references: [id], onDelete: SetNull)
   // Push notification token
   pushToken    String?
+  // Реферальный код пользователя
+  referralCode String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  ordersAsClient Order[]    @relation("ClientOrders")
-  ordersAsMaster Order[]    @relation("MasterOrders")
-  referrals      Referral[] @relation("Referrer")
-  referred       Referral?  @relation("Referred")
+  ordersAsClient        Order[]              @relation("ClientOrders")
+  ordersAsMaster        Order[]              @relation("MasterOrders")
+  referrals             Referral[]            @relation("Referrer")
+  referred              Referral?             @relation("Referred")
+  masterApplication     MasterApplication?
+  processedApplications MasterApplication[]  @relation("ProcessedApplications")
+  promoCodeUsages       PromoCodeUsage[]
 
   @@index([role])
+  @@index([referralCode])
   @@map("users")
 }
 
@@ -52,7 +58,8 @@ model City {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users User[]
+  users    User[]
+  services ServiceCity[] // Связь с услугами через промежуточную таблицу
 
   @@index([name])
   @@map("cities")
@@ -76,6 +83,7 @@ model ServiceCategory {
   slug        String   @unique
   description String?
   icon        String?
+  image       String?  // Ссылка на изображение категории
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -90,15 +98,34 @@ model Service {
   slug        String
   description String?
   price       Float?
+  image       String?  // Ссылка на изображение услуги
+  time        String?  // Время выполнения работы (например, "1-2 часа", "1 день")
   categoryId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orders   OrderItem[]
+  orders    OrderItem[]
+  cities    ServiceCity[] // Связь с городами через промежуточную таблицу
 
   @@unique([categoryId, slug])
   @@map("services")
+}
+
+// Промежуточная таблица для связи услуг с городами (many-to-many)
+model ServiceCity {
+  id        String   @id @default(cuid())
+  serviceId String
+  cityId    String
+  createdAt DateTime @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  city    City    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, cityId]) // Одна услуга может быть в городе только один раз
+  @@index([cityId])
+  @@index([serviceId])
+  @@map("service_cities")
 }
 
 model Order {
@@ -165,23 +192,35 @@ model OrderStep {
 }
 
 model Referral {
-  id         String   @id @default(cuid())
+  id         String         @id @default(cuid())
   referrerId String
-  referredId String   @unique
-  points     Int      @default(0)
-  createdAt  DateTime @default(now())
+  referredId String         @unique
+  points     Int            @default(0)
+  status     ReferralStatus @default(PENDING)
+  completedAt DateTime?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
 
   referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
   referred User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
 
+  @@index([referrerId])
+  @@index([status])
   @@map("referrals")
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
 }
 
 model PromoCode {
   id           String    @id @default(cuid())
   code         String    @unique
-  discount     Float
-  discountType String // "percentage" | "fixed"
+  description  String?   // Описание промокода
+  points       Int       @default(0) // Количество баллов за активацию
+  discount     Float?    // Скидка (если используется)
+  discountType String?   // "percentage" | "fixed"
   minAmount    Float?
   maxDiscount  Float?
   expiresAt    DateTime?
@@ -191,7 +230,26 @@ model PromoCode {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  usages PromoCodeUsage[]
+
+  @@index([isActive])
   @@map("promo_codes")
+}
+
+model PromoCodeUsage {
+  id         String   @id @default(cuid())
+  promoCodeId String
+  userId     String
+  points     Int      @default(0) // Баллы, полученные за активацию
+  createdAt  DateTime @default(now())
+
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([promoCodeId, userId]) // Пользователь может использовать промокод только один раз
+  @@index([userId])
+  @@index([promoCodeId])
+  @@map("promo_code_usages")
 }
 
 enum OrderStatus {
@@ -212,4 +270,34 @@ enum StepStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
+}
+
+model MasterApplication {
+  id             String                    @id @default(cuid())
+  userId         String                    @unique
+  name           String
+  phone          String
+  email          String?
+  experience     String?                   // Опыт работы (лет)
+  specialties    String[]                  // Специализации (массив строк)
+  description    String?                   // Описание о себе
+  status         MasterApplicationStatus   @default(PENDING)
+  processedAt    DateTime?
+  processedById  String?                   // ID админа, который обработал заявку
+  processedBy    User?                     @relation("ProcessedApplications", fields: [processedById], references: [id], onDelete: SetNull)
+  rejectionReason String?                  // Причина отклонения
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@map("master_applications")
+}
+
+enum MasterApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

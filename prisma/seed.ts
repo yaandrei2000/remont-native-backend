@@ -14,6 +14,7 @@ async function main() {
       slug: 'plumbing',
       description: 'Услуги сантехника',
       icon: 'wrench',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
     },
   });
 
@@ -25,6 +26,7 @@ async function main() {
       slug: 'electrical',
       description: 'Услуги электрика',
       icon: 'zap',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
     },
   });
 
@@ -36,6 +38,7 @@ async function main() {
       slug: 'appliances',
       description: 'Ремонт бытовой техники',
       icon: 'wrench',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
     },
   });
 
@@ -47,6 +50,7 @@ async function main() {
       slug: 'laptop',
       description: 'Ремонт ноутбуков',
       icon: 'laptop',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/laptop.jpeg',
     },
   });
 
@@ -58,6 +62,19 @@ async function main() {
       slug: 'air-conditioning',
       description: 'Ремонт и установка кондиционеров',
       icon: 'air-vent',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/air-conditioning.jpeg',
+    },
+  });
+
+  const coffeeMachineCategory = await prisma.serviceCategory.upsert({
+    where: { slug: 'coffee-machine' },
+    update: {},
+    create: {
+      name: 'Кофемашина',
+      slug: 'coffee-machine',
+      description: 'Ремонт и обслуживание кофемашин',
+      icon: 'coffee',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/coffee-machine.jpeg',
     },
   });
 
@@ -70,6 +87,22 @@ async function main() {
       slug: 'radiator-repair',
       description: 'Диагностика и ремонт радиатора отопления',
       price: 3380,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/air-conditioning.jpeg',
+      time: '2-3 часа',
+      categoryId: plumbingCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: plumbingCategory.id, slug: 'boiler-installation' } },
+    update: {},
+    create: {
+      name: 'Установка бойлера',
+      slug: 'boiler-installation',
+      description: 'Установка и подключение водонагревателя',
+      price: 2830,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/air-conditioning.jpeg',
+      time: '3-4 часа',
       categoryId: plumbingCategory.id,
     },
   });
@@ -82,53 +115,119 @@ async function main() {
       slug: 'os-update',
       description: 'Обновление и настройка операционной системы',
       price: 1290,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/screen-repair.jpeg',
+      time: '1-2 часа',
       categoryId: laptopCategory.id,
     },
   });
 
   await prisma.service.upsert({
-    where: { categoryId_slug: { categoryId: plumbingCategory.id, slug: 'boiler-installation' } },
+    where: { categoryId_slug: { categoryId: laptopCategory.id, slug: 'data-recovery' } },
     update: {},
     create: {
-      name: 'Установка бойлера',
-      slug: 'boiler-installation',
-      description: 'Установка и подключение водонагревателя',
-      price: 2830,
-      categoryId: plumbingCategory.id,
+      name: 'Восстановление данных',
+      slug: 'data-recovery',
+      description: 'Профессиональное восстановление удаленных файлов, поврежденных данных и информации с неисправных накопителей.',
+      price: 1500,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/data-recovery.jpeg',
+      time: '1-3 дня',
+      categoryId: laptopCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: laptopCategory.id, slug: 'screen-repair' } },
+    update: {},
+    create: {
+      name: 'Ремонт экрана',
+      slug: 'screen-repair',
+      description: 'Замена матрицы ноутбука, ремонт дисплея и устранение проблем с изображением.',
+      price: 3000,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/screen-repair.jpeg',
+      time: '1 день',
+      categoryId: laptopCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: laptopCategory.id, slug: 'keyboard-repair' } },
+    update: {},
+    create: {
+      name: 'Ремонт клавиатуры',
+      slug: 'keyboard-repair',
+      description: 'Замена клавиш и ремонт клавиатуры',
+      price: 2000,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/keyboard-repair.jpeg',
+      time: '1 день',
+      categoryId: laptopCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: electricalCategory.id, slug: 'outlet-repair' } },
+    update: {},
+    create: {
+      name: 'Ремонт розеток',
+      slug: 'outlet-repair',
+      description: 'Замена и ремонт электрических розеток',
+      price: 500,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '30 мин',
+      categoryId: electricalCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: appliancesCategory.id, slug: 'washing-machine' } },
+    update: {},
+    create: {
+      name: 'Стиральная машина',
+      slug: 'washing-machine',
+      description: 'Ремонт стиральных машин',
+      price: 2000,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '1-2 часа',
+      categoryId: appliancesCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: airConditioningCategory.id, slug: 'ac-installation' } },
+    update: {},
+    create: {
+      name: 'Установка кондиционера',
+      slug: 'ac-installation',
+      description: 'Монтаж и подключение кондиционера',
+      price: 5000,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '2-3 часа',
+      categoryId: airConditioningCategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: coffeeMachineCategory.id, slug: 'coffee-repair' } },
+    update: {},
+    create: {
+      name: 'Ремонт кофемашины',
+      slug: 'coffee-repair',
+      description: 'Диагностика и ремонт кофемашин',
+      price: 1500,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '1-2 часа',
+      categoryId: coffeeMachineCategory.id,
     },
   });
 
   // Создаем города
-  const cities = [
-    { name: 'Санкт-Петербург', region: 'Ленинградская область' },
-    { name: 'Астрахань', region: 'Астраханская область' },
-    { name: 'Архангельск', region: 'Архангельская область' },
-    { name: 'Белгород', region: 'Белгородская область' },
-    { name: 'Барнаул', region: 'Алтайский край' },
-    { name: 'Брянск', region: 'Брянская область' },
-    { name: 'Воронеж', region: 'Воронежская область' },
+  const citiesData = [
     { name: 'Владимир', region: 'Владимирская область' },
-    { name: 'Волгоград', region: 'Волгоградская область' },
-    { name: 'Екатеринбург', region: 'Свердловская область' },
-    { name: 'Иваново', region: 'Ивановская область' },
-    { name: 'Казань', region: 'Республика Татарстан' },
-    { name: 'Калуга', region: 'Калужская область' },
-    { name: 'Краснодар', region: 'Краснодарский край' },
     { name: 'Москва', region: 'Московская область' },
-    { name: 'Нижний Новгород', region: 'Нижегородская область' },
-    { name: 'Новосибирск', region: 'Новосибирская область' },
-    { name: 'Омск', region: 'Омская область' },
-    { name: 'Пермь', region: 'Пермский край' },
-    { name: 'Ростов-на-Дону', region: 'Ростовская область' },
-    { name: 'Самара', region: 'Самарская область' },
-    { name: 'Тольятти', region: 'Самарская область' },
-    { name: 'Уфа', region: 'Республика Башкортостан' },
-    { name: 'Челябинск', region: 'Челябинская область' },
-    { name: 'Ярославль', region: 'Ярославская область' },
   ];
 
-  for (const cityData of cities) {
-    await prisma.city.upsert({
+  const cities: { id: string; name: string }[] = [];
+  for (const cityData of citiesData) {
+    const city = await prisma.city.upsert({
       where: { name: cityData.name },
       update: {},
       create: {
@@ -137,6 +236,29 @@ async function main() {
         isActive: true,
       },
     });
+    cities.push({ id: city.id, name: city.name });
+  }
+
+  // Получаем все созданные услуги
+  const allServices = await prisma.service.findMany();
+
+  // Связываем все услуги с обоими городами
+  for (const service of allServices) {
+    for (const city of cities) {
+      await prisma.serviceCity.upsert({
+        where: {
+          serviceId_cityId: {
+            serviceId: service.id,
+            cityId: city.id,
+          },
+        },
+        update: {},
+        create: {
+          serviceId: service.id,
+          cityId: city.id,
+        },
+      });
+    }
   }
 
   // Создаем тестового мастера (пользователь с ролью MASTER)
@@ -153,6 +275,51 @@ async function main() {
       reviewsCount: 10,
       isActive: true,
       points: 0,
+    },
+  });
+
+  // Создаем промокоды
+  const promoCode1 = await prisma.promoCode.upsert({
+    where: { code: 'WELCOME100' },
+    update: {},
+    create: {
+      code: 'WELCOME100',
+      description: '100 баллов за регистрацию',
+      points: 100,
+      isActive: true,
+    },
+  });
+
+  const promoCode2 = await prisma.promoCode.upsert({
+    where: { code: 'FIRSTORDER' },
+    update: {},
+    create: {
+      code: 'FIRSTORDER',
+      description: '200 баллов за первую заявку',
+      points: 200,
+      isActive: true,
+    },
+  });
+
+  const promoCode3 = await prisma.promoCode.upsert({
+    where: { code: 'WINTER2024' },
+    update: {},
+    create: {
+      code: 'WINTER2024',
+      description: '300 баллов за заказ зимой',
+      points: 300,
+      isActive: true,
+    },
+  });
+
+  const promoCode4 = await prisma.promoCode.upsert({
+    where: { code: 'FRIEND500' },
+    update: {},
+    create: {
+      code: 'FRIEND500',
+      description: '500 баллов за приглашение друга',
+      points: 500,
+      isActive: true,
     },
   });
 

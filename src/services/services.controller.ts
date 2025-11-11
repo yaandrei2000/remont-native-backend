@@ -7,29 +7,45 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get('categories')
-  async getCategories() {
-    return this.servicesService.getCategories();
+  async getCategories(@Query('cityId') cityId?: string) {
+    return this.servicesService.getCategories(cityId);
   }
 
   @Get('categories/:categorySlug')
   async getServicesByCategory(
     @Param('categorySlug') categorySlug: string,
-    @Query() pagination: PaginationDto,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('cityId') cityId?: string,
   ) {
-    return this.servicesService.getServicesByCategory(categorySlug, pagination);
+    const pagination: PaginationDto = {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+    };
+    return this.servicesService.getServicesByCategory(categorySlug, pagination, cityId);
   }
 
   @Get('categories/:categorySlug/services/:serviceSlug')
   async getService(
     @Param('categorySlug') categorySlug: string,
     @Param('serviceSlug') serviceSlug: string,
+    @Query('cityId') cityId?: string,
   ) {
-    return this.servicesService.getService(categorySlug, serviceSlug);
+    return this.servicesService.getService(categorySlug, serviceSlug, cityId);
   }
 
   @Get('search')
-  async searchServices(@Query('q') query: string, @Query() pagination: PaginationDto) {
-    return this.servicesService.searchServices(query, pagination);
+  async searchServices(
+    @Query('q') query: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('cityId') cityId?: string,
+  ) {
+    const pagination: PaginationDto = {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+    };
+    return this.servicesService.searchServices(query, pagination, cityId);
   }
 }
 

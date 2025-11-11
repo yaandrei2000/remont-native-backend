@@ -16,6 +16,10 @@ export class CreateCategoryDto {
   @IsString()
   @IsOptional()
   icon?: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
 }
 
 

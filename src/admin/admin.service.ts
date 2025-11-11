@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../libs/storage/storage.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -7,10 +8,28 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
+import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AdminService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private storageService: StorageService,
+    private configService: ConfigService,
+  ) {}
+
+  private getS3BaseUrl(): string {
+    const endpoint = this.configService.get<string>('S3_ENDPOINT');
+    const bucket = this.configService.get<string>('S3_BUCKET_NAME');
+    // Формируем публичный URL для S3
+    if (endpoint && bucket) {
+      // Если endpoint содержит домен, используем его
+      const url = endpoint.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      return `https://${url}/${bucket}`;
+    }
+    return '';
+  }
 
   // ========== USERS ==========
   async getUsers(pagination: PaginationDto, search?: string) {
@@ -101,9 +120,17 @@ export class AdminService {
       throw new NotFoundException('User not found');
     }
 
-    if (dto.cityId) {
+    // Преобразуем пустую строку в null для cityId
+    const updateData: any = {
+      ...dto,
+      cityId: dto.cityId && typeof dto.cityId === 'string' && dto.cityId.trim() !== '' 
+        ? dto.cityId.trim() 
+        : null,
+    };
+
+    if (updateData.cityId) {
       const city = await this.prisma.city.findUnique({
-        where: { id: dto.cityId },
+        where: { id: updateData.cityId },
       });
       if (!city) {
         throw new NotFoundException('City not found');
@@ -112,7 +139,7 @@ export class AdminService {
 
     return this.prisma.user.update({
       where: { id: userId },
-      data: dto,
+      data: updateData,
       include: {
         city: true,
       },
@@ -369,7 +396,7 @@ export class AdminService {
     return category;
   }
 
-  async createCategory(dto: CreateCategoryDto) {
+  async createCategory(dto: CreateCategoryDto, imageFile?: any) {
     const existing = await this.prisma.serviceCategory.findFirst({
       where: {
         OR: [{ slug: dto.slug }, { name: dto.name }],
@@ -380,12 +407,32 @@ export class AdminService {
       throw new BadRequestException('Category with this slug or name already exists');
     }
 
+    let imageUrl = dto.image;
+
+    // Если передан файл, загружаем его в S3
+    if (imageFile) {
+      const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
+      const fileName = `categories/${uuidv4()}.${fileExtension}`;
+      
+      await this.storageService.upload(
+        imageFile.buffer,
+        fileName,
+        imageFile.mimetype
+      );
+
+      const baseUrl = this.getS3BaseUrl();
+      imageUrl = baseUrl ? `${baseUrl}/${fileName}` : fileName;
+    }
+
     return this.prisma.serviceCategory.create({
-      data: dto,
+      data: {
+        ...dto,
+        image: imageUrl,
+      },
     });
   }
 
-  async updateCategory(categoryId: string, dto: UpdateCategoryDto) {
+  async updateCategory(categoryId: string, dto: UpdateCategoryDto, imageFile?: any) {
     const category = await this.prisma.serviceCategory.findUnique({
       where: { id: categoryId },
     });
@@ -414,19 +461,79 @@ export class AdminService {
       }
     }
 
+    let imageUrl = dto.image;
+
+    // Если передан новый файл, загружаем его в S3
+    if (imageFile) {
+      // Удаляем старое изображение из S3, если оно есть
+      if (category.image) {
+        try {
+          const key = this.extractS3Key(category.image);
+          if (key) {
+            await this.storageService.remove(key);
+          }
+        } catch (error) {
+          console.error(`Failed to delete old category image:`, error);
+        }
+      }
+
+      // Загружаем новое изображение
+      const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
+      const fileName = `categories/${uuidv4()}.${fileExtension}`;
+      
+      await this.storageService.upload(
+        imageFile.buffer,
+        fileName,
+        imageFile.mimetype
+      );
+
+      const baseUrl = this.getS3BaseUrl();
+      imageUrl = baseUrl ? `${baseUrl}/${fileName}` : fileName;
+    }
+
     return this.prisma.serviceCategory.update({
       where: { id: categoryId },
-      data: dto,
+      data: {
+        ...dto,
+        image: imageUrl,
+      },
     });
+  }
+
+  private extractS3Key(url: string): string | null {
+    if (!url) return null;
+    
+    try {
+      const servicesMatch = url.match(/services\/([^\/]+\.\w+)/);
+      const categoriesMatch = url.match(/categories\/([^\/]+\.\w+)/);
+      
+      if (servicesMatch) {
+        return `services/${servicesMatch[1]}`;
+      }
+      if (categoriesMatch) {
+        return `categories/${categoriesMatch[1]}`;
+      }
+      
+      const urlParts = url.split('/');
+      const key = urlParts.slice(-2).join('/');
+      if (key.startsWith('services/') || key.startsWith('categories/')) {
+        return key;
+      }
+      
+      return null;
+    } catch (error) {
+      return null;
+    }
   }
 
   async deleteCategory(categoryId: string) {
     const category = await this.prisma.serviceCategory.findUnique({
       where: { id: categoryId },
       include: {
-        _count: {
+        services: {
           select: {
-            services: true,
+            id: true,
+            image: true,
           },
         },
       },
@@ -436,10 +543,64 @@ export class AdminService {
       throw new NotFoundException('Category not found');
     }
 
-    if (category._count.services > 0) {
-      throw new BadRequestException('Cannot delete category with services');
+    // Вспомогательная функция для извлечения ключа из URL
+    const extractS3Key = (url: string): string | null => {
+      if (!url) return null;
+      
+      try {
+        // Если URL содержит "services/" или "categories/", извлекаем ключ
+        const servicesMatch = url.match(/services\/([^\/]+\.\w+)/);
+        const categoriesMatch = url.match(/categories\/([^\/]+\.\w+)/);
+        
+        if (servicesMatch) {
+          return `services/${servicesMatch[1]}`;
+        }
+        if (categoriesMatch) {
+          return `categories/${categoriesMatch[1]}`;
+        }
+        
+        // Если не нашли паттерн, пробуем извлечь последние 2 части пути
+        const urlParts = url.split('/');
+        const key = urlParts.slice(-2).join('/');
+        if (key.startsWith('services/') || key.startsWith('categories/')) {
+          return key;
+        }
+        
+        return null;
+      } catch (error) {
+        return null;
+      }
+    };
+
+    // Удаляем изображения услуг из S3 перед удалением категории
+    // (каскадное удаление услуг произойдет автоматически благодаря onDelete: Cascade)
+    for (const service of category.services) {
+      if (service.image) {
+        try {
+          const key = extractS3Key(service.image);
+          if (key) {
+            await this.storageService.remove(key);
+          }
+        } catch (error) {
+          // Логируем ошибку, но не прерываем удаление категории
+          console.error(`Failed to delete image for service ${service.id}:`, error);
+        }
+      }
     }
 
+    // Удаляем изображение категории из S3, если оно есть
+    if (category.image) {
+      try {
+        const key = extractS3Key(category.image);
+        if (key) {
+          await this.storageService.remove(key);
+        }
+      } catch (error) {
+        console.error(`Failed to delete category image:`, error);
+      }
+    }
+
+    // Удаляем категорию (услуги удалятся автоматически благодаря onDelete: Cascade)
     await this.prisma.serviceCategory.delete({
       where: { id: categoryId },
     });
@@ -497,7 +658,7 @@ export class AdminService {
     return service;
   }
 
-  async createService(dto: CreateServiceDto) {
+  async createService(dto: CreateServiceDto, imageFile?: any) {
     const category = await this.prisma.serviceCategory.findUnique({
       where: { id: dto.categoryId },
     });
@@ -519,15 +680,35 @@ export class AdminService {
       throw new BadRequestException('Service with this slug already exists in this category');
     }
 
+    let imageUrl = dto.image;
+
+    // Если передан файл, загружаем его в S3
+    if (imageFile) {
+      const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
+      const fileName = `services/${uuidv4()}.${fileExtension}`;
+      
+      await this.storageService.upload(
+        imageFile.buffer,
+        fileName,
+        imageFile.mimetype
+      );
+
+      const baseUrl = this.getS3BaseUrl();
+      imageUrl = baseUrl ? `${baseUrl}/${fileName}` : fileName;
+    }
+
     return this.prisma.service.create({
-      data: dto,
+      data: {
+        ...dto,
+        image: imageUrl,
+      },
       include: {
         category: true,
       },
     });
   }
 
-  async updateService(serviceId: string, dto: UpdateServiceDto) {
+  async updateService(serviceId: string, dto: UpdateServiceDto, imageFile?: any) {
     const service = await this.prisma.service.findUnique({
       where: { id: serviceId },
     });
@@ -560,9 +741,42 @@ export class AdminService {
       }
     }
 
+    let imageUrl = dto.image;
+
+    // Если передан новый файл, загружаем его в S3
+    if (imageFile) {
+      // Удаляем старое изображение из S3, если оно есть
+      if (service.image) {
+        try {
+          const key = this.extractS3Key(service.image);
+          if (key) {
+            await this.storageService.remove(key);
+          }
+        } catch (error) {
+          console.error(`Failed to delete old service image:`, error);
+        }
+      }
+
+      // Загружаем новое изображение
+      const fileExtension = imageFile.originalname.split('.').pop() || 'jpg';
+      const fileName = `services/${uuidv4()}.${fileExtension}`;
+      
+      await this.storageService.upload(
+        imageFile.buffer,
+        fileName,
+        imageFile.mimetype
+      );
+
+      const baseUrl = this.getS3BaseUrl();
+      imageUrl = baseUrl ? `${baseUrl}/${fileName}` : fileName;
+    }
+
     return this.prisma.service.update({
       where: { id: serviceId },
-      data: dto,
+      data: {
+        ...dto,
+        image: imageUrl,
+      },
       include: {
         category: true,
       },
@@ -660,6 +874,297 @@ export class AdminService {
       },
       revenue: revenue._sum.totalPrice || 0,
       recentOrders,
+    };
+  }
+
+  // ========== SERVICE CITIES MANAGEMENT ==========
+  async getCities() {
+    return this.prisma.city.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async getCityServices(cityId: string) {
+    const city = await this.prisma.city.findUnique({
+      where: { id: cityId },
+    });
+
+    if (!city) {
+      throw new NotFoundException('City not found');
+    }
+
+    // Получаем все услуги с информацией о том, привязаны ли они к городу
+    const allServices = await this.prisma.service.findMany({
+      include: {
+        category: true,
+        cities: {
+          where: {
+            cityId: cityId,
+          },
+        },
+      },
+      orderBy: {
+        category: {
+          name: 'asc',
+        },
+      },
+    });
+
+    return {
+      city,
+      services: allServices.map((service) => ({
+        ...service,
+        isAttached: service.cities.length > 0,
+      })),
+    };
+  }
+
+  async manageCityServices(cityId: string, serviceIds: string[]) {
+    const city = await this.prisma.city.findUnique({
+      where: { id: cityId },
+    });
+
+    if (!city) {
+      throw new NotFoundException('City not found');
+    }
+
+    // Проверяем существование всех услуг
+    const services = await this.prisma.service.findMany({
+      where: {
+        id: {
+          in: serviceIds,
+        },
+      },
+    });
+
+    if (services.length !== serviceIds.length) {
+      throw new BadRequestException('Some services not found');
+    }
+
+    // Удаляем все существующие связи для этого города
+    await this.prisma.serviceCity.deleteMany({
+      where: {
+        cityId: cityId,
+      },
+    });
+
+    // Создаем новые связи
+    if (serviceIds.length > 0) {
+      await this.prisma.serviceCity.createMany({
+        data: serviceIds.map((serviceId) => ({
+          serviceId,
+          cityId,
+        })),
+      });
+    }
+
+    return {
+      message: 'Services updated for city',
+      cityId,
+      serviceIds,
+    };
+  }
+
+  // ========== MASTER APPLICATIONS ==========
+  async getMasterApplications(pagination: PaginationDto, status?: string) {
+    const page = pagination.page || 1;
+    const limit = pagination.limit || 10;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (status) {
+      where.status = status;
+    }
+
+    const [applications, total] = await Promise.all([
+      this.prisma.masterApplication.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          user: {
+            select: {
+              id: true,
+              phone: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              role: true,
+            },
+          },
+          processedBy: {
+            select: {
+              id: true,
+              phone: true,
+              firstName: true,
+              lastName: true,
+            },
+          },
+        },
+      }),
+      this.prisma.masterApplication.count({ where }),
+    ]);
+
+    return {
+      applications,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
+  }
+
+  async getMasterApplicationById(applicationId: string) {
+    const application = await this.prisma.masterApplication.findUnique({
+      where: { id: applicationId },
+      include: {
+        user: {
+          include: {
+            city: true,
+            _count: {
+              select: {
+                ordersAsClient: true,
+                ordersAsMaster: true,
+              },
+            },
+          },
+        },
+        processedBy: {
+          select: {
+            id: true,
+            phone: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Master application not found');
+    }
+
+    return application;
+  }
+
+  async approveMasterApplication(applicationId: string, adminId: string) {
+    const application = await this.prisma.masterApplication.findUnique({
+      where: { id: applicationId },
+      include: { user: true },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Master application not found');
+    }
+
+    if (application.status !== 'PENDING') {
+      throw new BadRequestException('Application already processed');
+    }
+
+    // Обновляем заявку
+    await this.prisma.masterApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: 'APPROVED',
+        processedAt: new Date(),
+        processedById: adminId,
+      },
+    });
+
+    // Переводим пользователя в мастера
+    await this.prisma.user.update({
+      where: { id: application.userId },
+      data: {
+        role: 'MASTER',
+        firstName: application.name.split(' ')[0] || application.name,
+        lastName: application.name.split(' ').slice(1).join(' ') || null,
+        email: application.email || application.user.email,
+        isActive: true,
+      },
+    });
+
+    return {
+      message: 'Master application approved',
+      applicationId,
+    };
+  }
+
+  async rejectMasterApplication(
+    applicationId: string,
+    adminId: string,
+    rejectionReason?: string,
+  ) {
+    const application = await this.prisma.masterApplication.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) {
+      throw new NotFoundException('Master application not found');
+    }
+
+    if (application.status !== 'PENDING') {
+      throw new BadRequestException('Application already processed');
+    }
+
+    await this.prisma.masterApplication.update({
+      where: { id: applicationId },
+      data: {
+        status: 'REJECTED',
+        processedAt: new Date(),
+        processedById: adminId,
+        rejectionReason: rejectionReason || null,
+      },
+    });
+
+    return {
+      message: 'Master application rejected',
+      applicationId,
+    };
+  }
+
+  async demoteMaster(userId: string, adminId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { masterApplication: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.role !== 'MASTER') {
+      throw new BadRequestException('User is not a master');
+    }
+
+    // Переводим пользователя обратно в клиента
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: 'CLIENT',
+        isActive: false,
+      },
+    });
+
+    // Если есть заявка, помечаем её как отклоненную
+    if (user.masterApplication) {
+      await this.prisma.masterApplication.update({
+        where: { id: user.masterApplication.id },
+        data: {
+          status: 'REJECTED',
+          processedAt: new Date(),
+          processedById: adminId,
+          rejectionReason: 'Разжалован администратором',
+        },
+      });
+    }
+
+    return {
+      message: 'Master demoted to client',
+      userId,
     };
   }
 }

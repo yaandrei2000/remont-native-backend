@@ -20,6 +20,14 @@ export class CreateServiceDto {
   @IsString()
   @IsNotEmpty()
   categoryId: string;
+
+  @IsString()
+  @IsOptional()
+  image?: string;
+
+  @IsString()
+  @IsOptional()
+  time?: string;
 }
 
 

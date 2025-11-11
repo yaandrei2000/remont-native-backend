@@ -8,16 +8,23 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
+import { ApproveMasterApplicationDto } from './dto/approve-master-application.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('admin')
@@ -124,13 +131,39 @@ export class AdminController {
   }
 
   @Post('categories')
-  async createCategory(@Body() dto: CreateCategoryDto) {
-    return this.adminService.createCategory(dto);
+  @UseInterceptors(FileInterceptor('image'))
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true, transform: true }))
+  async createCategory(
+    @Body() body: any,
+    @UploadedFile() image?: any,
+  ) {
+    // При использовании FileInterceptor, body приходит как объект с полями
+    const dto: CreateCategoryDto = {
+      name: body.name,
+      slug: body.slug,
+      description: body.description || undefined,
+      icon: body.icon || undefined,
+      image: body.image || undefined,
+    };
+    return this.adminService.createCategory(dto, image);
   }
 
   @Put('categories/:id')
-  async updateCategory(@Param('id') id: string, @Body() dto: UpdateCategoryDto) {
-    return this.adminService.updateCategory(id, dto);
+  @UseInterceptors(FileInterceptor('image'))
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true, transform: true }))
+  async updateCategory(
+    @Param('id') id: string,
+    @Body() body: any,
+    @UploadedFile() image?: any,
+  ) {
+    const dto: UpdateCategoryDto = {
+      name: body.name,
+      slug: body.slug,
+      description: body.description || undefined,
+      icon: body.icon || undefined,
+      image: body.image || undefined,
+    };
+    return this.adminService.updateCategory(id, dto, image);
   }
 
   @Delete('categories/:id')
@@ -158,18 +191,111 @@ export class AdminController {
   }
 
   @Post('services')
-  async createService(@Body() dto: CreateServiceDto) {
-    return this.adminService.createService(dto);
+  @UseInterceptors(FileInterceptor('image'))
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true, transform: true }))
+  async createService(
+    @Body() body: any,
+    @UploadedFile() image?: any,
+  ) {
+    // При использовании FileInterceptor, body приходит как объект с полями
+    const dto: CreateServiceDto = {
+      name: body.name,
+      slug: body.slug,
+      description: body.description || undefined,
+      price: body.price ? parseFloat(body.price) : undefined,
+      categoryId: body.categoryId,
+      time: body.time || undefined,
+      image: body.image || undefined,
+    };
+    return this.adminService.createService(dto, image);
   }
 
   @Put('services/:id')
-  async updateService(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.adminService.updateService(id, dto);
+  @UseInterceptors(FileInterceptor('image'))
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true, transform: true }))
+  async updateService(
+    @Param('id') id: string,
+    @Body() body: any,
+    @UploadedFile() image?: any,
+  ) {
+    const dto: UpdateServiceDto = {
+      name: body.name,
+      slug: body.slug,
+      description: body.description || undefined,
+      price: body.price ? parseFloat(body.price) : undefined,
+      categoryId: body.categoryId,
+      time: body.time || undefined,
+      image: body.image || undefined,
+    };
+    return this.adminService.updateService(id, dto, image);
   }
 
   @Delete('services/:id')
   async deleteService(@Param('id') id: string) {
     return this.adminService.deleteService(id);
+  }
+
+  // ========== SERVICE CITIES MANAGEMENT ==========
+  @Get('cities')
+  async getCities() {
+    return this.adminService.getCities();
+  }
+
+  @Get('cities/:cityId/services')
+  async getCityServices(@Param('cityId') cityId: string) {
+    return this.adminService.getCityServices(cityId);
+  }
+
+  @Post('cities/:cityId/services')
+  async manageCityServices(
+    @Param('cityId') cityId: string,
+    @Body() body: { serviceIds: string[] },
+  ) {
+    return this.adminService.manageCityServices(cityId, body.serviceIds);
+  }
+
+  // ========== MASTER APPLICATIONS ==========
+  @Get('master-applications')
+  async getMasterApplications(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('status') status?: string,
+  ) {
+    const pagination: PaginationDto = {
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+    };
+    return this.adminService.getMasterApplications(pagination, status);
+  }
+
+  @Get('master-applications/:id')
+  async getMasterApplicationById(@Param('id') id: string) {
+    return this.adminService.getMasterApplicationById(id);
+  }
+
+  @Post('master-applications/:id/approve')
+  async approveMasterApplication(
+    @Param('id') id: string,
+    @CurrentUser() admin: any,
+  ) {
+    return this.adminService.approveMasterApplication(id, admin.id);
+  }
+
+  @Post('master-applications/:id/reject')
+  async rejectMasterApplication(
+    @Param('id') id: string,
+    @CurrentUser() admin: any,
+    @Body() dto: ApproveMasterApplicationDto,
+  ) {
+    return this.adminService.rejectMasterApplication(id, admin.id, dto.rejectionReason);
+  }
+
+  @Post('users/:id/demote')
+  async demoteMaster(
+    @Param('id') id: string,
+    @CurrentUser() admin: any,
+  ) {
+    return this.adminService.demoteMaster(id, admin.id);
   }
 
   // ========== STATISTICS ==========

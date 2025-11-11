@@ -5,6 +5,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ReferralsService } from '../referrals/referrals.service';
 import { UserRole } from '@prisma/client';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private referralsService: ReferralsService,
   ) {}
 
   async createOrder(dto: CreateOrderDto, clientId?: string) {
@@ -613,6 +615,22 @@ export class OrdersService {
           completedAt: new Date(),
         },
       });
+
+      // Проверяем, является ли это первой завершенной заявкой клиента
+      if (order.clientId) {
+        const completedOrdersCount = await this.prisma.order.count({
+          where: {
+            clientId: order.clientId,
+            status: 'COMPLETED',
+            id: { not: orderId }, // Исключаем текущий заказ
+          },
+        });
+
+        // Если это первая завершенная заявка, завершаем реферальную программу
+        if (completedOrdersCount === 0) {
+          await this.referralsService.completeReferral(order.clientId);
+        }
+      }
     }
 
     if (dto.status === 'CANCELLED' && dto.reason) {
