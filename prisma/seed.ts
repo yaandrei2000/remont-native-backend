@@ -338,16 +338,19 @@ async function main() {
 
   // Создаем секции главной страницы
   // 1. Quick Services (Быстрые услуги - категории)
-  const quickServicesSection = await prisma.homePageSection.upsert({
+  let quickServicesSection = await prisma.homePageSection.findFirst({
     where: { type: 'QUICK_SERVICES' },
-    update: {},
-    create: {
-      type: 'QUICK_SERVICES',
-      title: null,
-      isActive: true,
-      order: 1,
-    },
   });
+  if (!quickServicesSection) {
+    quickServicesSection = await prisma.homePageSection.create({
+      data: {
+        type: 'QUICK_SERVICES',
+        title: null,
+        isActive: true,
+        order: 1,
+      },
+    });
+  }
 
   // Добавляем категории в Quick Services
   await prisma.homePageSectionItem.upsert({
@@ -403,16 +406,19 @@ async function main() {
   });
 
   // 2. Service Categories (Категории услуг)
-  const serviceCategoriesSection = await prisma.homePageSection.upsert({
+  let serviceCategoriesSection = await prisma.homePageSection.findFirst({
     where: { type: 'SERVICE_CATEGORIES' },
-    update: {},
-    create: {
-      type: 'SERVICE_CATEGORIES',
-      title: null,
-      isActive: true,
-      order: 2,
-    },
   });
+  if (!serviceCategoriesSection) {
+    serviceCategoriesSection = await prisma.homePageSection.create({
+      data: {
+        type: 'SERVICE_CATEGORIES',
+        title: null,
+        isActive: true,
+        order: 2,
+      },
+    });
+  }
 
   // Добавляем все категории в Service Categories
   const allCategories = [
@@ -440,17 +446,20 @@ async function main() {
   }
 
   // 3. Seasonal Services (Сезонные услуги)
-  const seasonalServicesSection = await prisma.homePageSection.upsert({
+  let seasonalServicesSection = await prisma.homePageSection.findFirst({
     where: { type: 'SEASONAL_SERVICES' },
-    update: {},
-    create: {
-      type: 'SEASONAL_SERVICES',
-      title: 'Часто заказывают осенью',
-      icon: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=48&h=48&fit=crop',
-      isActive: true,
-      order: 3,
-    },
   });
+  if (!seasonalServicesSection) {
+    seasonalServicesSection = await prisma.homePageSection.create({
+      data: {
+        type: 'SEASONAL_SERVICES',
+        title: 'Часто заказывают осенью',
+        icon: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=48&h=48&fit=crop',
+        isActive: true,
+        order: 3,
+      },
+    });
+  }
 
   // Получаем услуги для сезонных услуг
   const radiatorRepair = await prisma.service.findUnique({

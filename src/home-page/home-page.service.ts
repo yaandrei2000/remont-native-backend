@@ -93,9 +93,9 @@ export class HomePageService {
     });
   }
 
-  // Получить секцию по типу
+  // Получить секцию по типу (первую найденную)
   async getSectionByType(type: HomePageSectionType) {
-    return this.prisma.homePageSection.findUnique({
+    return this.prisma.homePageSection.findFirst({
       where: { type },
       include: {
         items: {
@@ -216,6 +216,7 @@ export class HomePageService {
         sectionId,
         categoryId: dto.categoryId,
         serviceId: dto.serviceId,
+        imageUrl: dto.imageUrl,
         order: dto.order ?? 0,
       },
       include: {

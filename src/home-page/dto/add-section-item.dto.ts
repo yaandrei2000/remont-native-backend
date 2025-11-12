@@ -9,6 +9,10 @@ export class AddSectionItemDto {
   @IsOptional()
   serviceId?: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string; // URL изображения для промо-карточки
+
   @IsInt()
   @Min(0)
   @IsOptional()
