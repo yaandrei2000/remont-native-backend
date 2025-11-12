@@ -137,6 +137,7 @@ export class HomePageService {
       data: {
         type: dto.type,
         title: dto.title,
+        icon: dto.icon,
         isActive: dto.isActive ?? true,
         order: dto.order ?? 0,
       },
@@ -302,4 +303,5 @@ export class HomePageService {
     return { success: true };
   }
 }
+
 

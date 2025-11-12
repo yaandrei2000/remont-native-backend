@@ -9,11 +9,25 @@ import { SendMessageDto } from './dto/send-message.dto';
 export class ChatsController {
   constructor(private readonly chatsService: ChatsService) {}
 
+  // Получить список всех чатов пользователя
+  @Get('me/all')
+  @UseGuards(JwtAuthGuard)
+  async getMyChats(@CurrentUser() user: any) {
+    return this.chatsService.getUserChats(user.id);
+  }
+
   // Получить или создать чат для пользователя
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async getMyChat(@CurrentUser() user: any) {
     return this.chatsService.getOrCreateUserChat(user.id);
+  }
+
+  // Получить чат по ID для пользователя
+  @Get('me/:chatId')
+  @UseGuards(JwtAuthGuard)
+  async getMyChatById(@CurrentUser() user: any, @Param('chatId') chatId: string) {
+    return this.chatsService.getUserChatById(user.id, chatId);
   }
 
   // Отправить сообщение от пользователя

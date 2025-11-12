@@ -13,6 +13,8 @@ import { PromoCodesModule } from './promo-codes/promo-codes.module';
 import { ReferralsModule } from './referrals/referrals.module';
 import { ChatsModule } from './chats/chats.module';
 import { HomePageModule } from './home-page/home-page.module';
+import { StoriesModule } from './stories/stories.module';
+import { BugReportsModule } from './bug-reports/bug-reports.module';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { HomePageModule } from './home-page/home-page.module';
     ReferralsModule,
     ChatsModule,
     HomePageModule,
+    StoriesModule,
+    BugReportsModule,
   ]
 })
 export class AppModule {}

@@ -261,20 +261,66 @@ async function main() {
     }
   }
 
-  // Создаем тестового мастера (пользователь с ролью MASTER)
-  await prisma.user.upsert({
-    where: { phone: '+7 (999) 123-45-67' },
+  // Создаем пользователей с разными ролями
+  const adminUser = await prisma.user.upsert({
+    where: { phone: '+7 999 999-99-96' },
     update: {},
     create: {
-      phone: '+7 (999) 123-45-67',
-      firstName: 'Алексей',
-      lastName: 'М.',
-      email: 'alexey@example.com',
-      role: 'MASTER',
-      rating: 5,
-      reviewsCount: 10,
+      phone: '+7 999 999-99-96',
+      firstName: 'Админ',
+      lastName: 'Админов',
+      email: 'admin@example.com',
+      role: 'ADMIN',
       isActive: true,
       points: 0,
+      cityId: cities[0].id, // Владимир
+    },
+  });
+
+  const masterUser = await prisma.user.upsert({
+    where: { phone: '+7 999 999-99-99' },
+    update: {},
+    create: {
+      phone: '+7 999 999-99-99',
+      firstName: 'Алексей',
+      lastName: 'Мастеров',
+      email: 'master@example.com',
+      role: 'MASTER',
+      rating: 4.8,
+      reviewsCount: 25,
+      isActive: true,
+      points: 500,
+      cityId: cities[0].id, // Владимир
+    },
+  });
+
+  const clientUser = await prisma.user.upsert({
+    where: { phone: '+7 961 258-41-30' },
+    update: {},
+    create: {
+      phone: '+7 961 258-41-30',
+      firstName: 'Иван',
+      lastName: 'Клиентов',
+      email: 'client@example.com',
+      role: 'CLIENT',
+      isActive: true,
+      points: 200,
+      cityId: cities[0].id, // Владимир
+    },
+  });
+
+  const clientUser2 = await prisma.user.upsert({
+    where: { phone: '+7 904 594-30-26' },
+    update: {},
+    create: {
+      phone: '+7 904 594-30-26',
+      firstName: 'Мария',
+      lastName: 'Петрова',
+      email: 'client2@example.com',
+      role: 'CLIENT',
+      isActive: true,
+      points: 100,
+      cityId: cities[1].id, // Москва
     },
   });
 
@@ -287,6 +333,300 @@ async function main() {
       description: '100 баллов за регистрацию',
       points: 100,
       isActive: true,
+    },
+  });
+
+  // Создаем секции главной страницы
+  // 1. Quick Services (Быстрые услуги - категории)
+  const quickServicesSection = await prisma.homePageSection.upsert({
+    where: { type: 'QUICK_SERVICES' },
+    update: {},
+    create: {
+      type: 'QUICK_SERVICES',
+      title: null,
+      isActive: true,
+      order: 1,
+    },
+  });
+
+  // Добавляем категории в Quick Services
+  await prisma.homePageSectionItem.upsert({
+    where: {
+      id: 'quick-services-1',
+    },
+    update: {},
+    create: {
+      id: 'quick-services-1',
+      sectionId: quickServicesSection.id,
+      categoryId: laptopCategory.id,
+      order: 0,
+    },
+  });
+
+  await prisma.homePageSectionItem.upsert({
+    where: {
+      id: 'quick-services-2',
+    },
+    update: {},
+    create: {
+      id: 'quick-services-2',
+      sectionId: quickServicesSection.id,
+      categoryId: airConditioningCategory.id,
+      order: 1,
+    },
+  });
+
+  await prisma.homePageSectionItem.upsert({
+    where: {
+      id: 'quick-services-3',
+    },
+    update: {},
+    create: {
+      id: 'quick-services-3',
+      sectionId: quickServicesSection.id,
+      categoryId: coffeeMachineCategory.id,
+      order: 2,
+    },
+  });
+
+  await prisma.homePageSectionItem.upsert({
+    where: {
+      id: 'quick-services-4',
+    },
+    update: {},
+    create: {
+      id: 'quick-services-4',
+      sectionId: quickServicesSection.id,
+      categoryId: appliancesCategory.id,
+      order: 3,
+    },
+  });
+
+  // 2. Service Categories (Категории услуг)
+  const serviceCategoriesSection = await prisma.homePageSection.upsert({
+    where: { type: 'SERVICE_CATEGORIES' },
+    update: {},
+    create: {
+      type: 'SERVICE_CATEGORIES',
+      title: null,
+      isActive: true,
+      order: 2,
+    },
+  });
+
+  // Добавляем все категории в Service Categories
+  const allCategories = [
+    plumbingCategory,
+    electricalCategory,
+    appliancesCategory,
+    laptopCategory,
+    airConditioningCategory,
+    coffeeMachineCategory,
+  ];
+
+  for (let i = 0; i < allCategories.length; i++) {
+    await prisma.homePageSectionItem.upsert({
+      where: {
+        id: `service-categories-${i + 1}`,
+      },
+      update: {},
+      create: {
+        id: `service-categories-${i + 1}`,
+        sectionId: serviceCategoriesSection.id,
+        categoryId: allCategories[i].id,
+        order: i,
+      },
+    });
+  }
+
+  // 3. Seasonal Services (Сезонные услуги)
+  const seasonalServicesSection = await prisma.homePageSection.upsert({
+    where: { type: 'SEASONAL_SERVICES' },
+    update: {},
+    create: {
+      type: 'SEASONAL_SERVICES',
+      title: 'Часто заказывают осенью',
+      icon: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?w=48&h=48&fit=crop',
+      isActive: true,
+      order: 3,
+    },
+  });
+
+  // Получаем услуги для сезонных услуг
+  const radiatorRepair = await prisma.service.findUnique({
+    where: { categoryId_slug: { categoryId: plumbingCategory.id, slug: 'radiator-repair' } },
+  });
+
+  const osUpdate = await prisma.service.findUnique({
+    where: { categoryId_slug: { categoryId: laptopCategory.id, slug: 'os-update' } },
+  });
+
+  const boilerInstallation = await prisma.service.findUnique({
+    where: { categoryId_slug: { categoryId: plumbingCategory.id, slug: 'boiler-installation' } },
+  });
+
+  // Добавляем услуги в Seasonal Services
+  if (radiatorRepair) {
+    await prisma.homePageSectionItem.upsert({
+      where: {
+        id: 'seasonal-services-1',
+      },
+      update: {},
+      create: {
+        id: 'seasonal-services-1',
+        sectionId: seasonalServicesSection.id,
+        serviceId: radiatorRepair.id,
+        order: 0,
+      },
+    });
+  }
+
+  if (osUpdate) {
+    await prisma.homePageSectionItem.upsert({
+      where: {
+        id: 'seasonal-services-2',
+      },
+      update: {},
+      create: {
+        id: 'seasonal-services-2',
+        sectionId: seasonalServicesSection.id,
+        serviceId: osUpdate.id,
+        order: 1,
+      },
+    });
+  }
+
+  if (boilerInstallation) {
+    await prisma.homePageSectionItem.upsert({
+      where: {
+        id: 'seasonal-services-3',
+      },
+      update: {},
+      create: {
+        id: 'seasonal-services-3',
+        sectionId: seasonalServicesSection.id,
+        serviceId: boilerInstallation.id,
+        order: 2,
+      },
+    });
+  }
+
+  // Создаем истории (Stories)
+  const story1 = await prisma.story.create({
+    data: {
+      title: 'Встречайте обновленный ФастСервис',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story1-preview.jpeg',
+      isActive: true,
+      order: 0,
+      images: {
+        create: [
+          {
+            image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=800&fit=crop',
+            title: 'Встречайте обновленный ФастСервис',
+            duration: 15000,
+            order: 0,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
+            title: 'Новые возможности сервиса',
+            duration: 15000,
+            order: 1,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+            title: 'Улучшенный интерфейс',
+            duration: 15000,
+            order: 2,
+          },
+        ],
+      },
+    },
+  });
+
+  const story2 = await prisma.story.create({
+    data: {
+      title: 'Дарим 500 рублей!',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story2-preview.jpeg',
+      isActive: true,
+      order: 1,
+      images: {
+        create: [
+          {
+            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=800&fit=crop',
+            title: 'Дарим 500 рублей!',
+            duration: 15000,
+            order: 0,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
+            title: 'За каждого друга',
+            duration: 15000,
+            order: 1,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+            title: 'И вам, и другу',
+            duration: 15000,
+            order: 2,
+          },
+        ],
+      },
+    },
+  });
+
+  const story3 = await prisma.story.create({
+    data: {
+      title: 'Через час мастер у вас',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story3-preview.jpeg',
+      isActive: true,
+      order: 2,
+      images: {
+        create: [
+          {
+            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+            title: 'Через час мастер у вас',
+            duration: 15000,
+            order: 0,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
+            title: 'Быстрое обслуживание',
+            duration: 15000,
+            order: 1,
+          },
+        ],
+      },
+    },
+  });
+
+  const story4 = await prisma.story.create({
+    data: {
+      title: 'Кэшбэк за заказы',
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story4-preview.jpeg',
+      isActive: true,
+      order: 3,
+      images: {
+        create: [
+          {
+            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=800&fit=crop',
+            title: 'Кэшбэк за заказы',
+            duration: 15000,
+            order: 0,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=800&fit=crop',
+            title: '10% с каждого заказа',
+            duration: 15000,
+            order: 1,
+          },
+          {
+            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+            title: 'Накопительные баллы',
+            duration: 15000,
+            order: 2,
+          },
+        ],
+      },
     },
   });
 

@@ -31,15 +31,16 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  ordersAsClient        Order[]              @relation("ClientOrders")
-  ordersAsMaster        Order[]              @relation("MasterOrders")
-  referrals             Referral[]            @relation("Referrer")
-  referred              Referral?             @relation("Referred")
+  ordersAsClient        Order[]             @relation("ClientOrders")
+  ordersAsMaster        Order[]             @relation("MasterOrders")
+  referrals             Referral[]          @relation("Referrer")
+  referred              Referral?           @relation("Referred")
   masterApplication     MasterApplication?
-  processedApplications MasterApplication[]  @relation("ProcessedApplications")
+  processedApplications MasterApplication[] @relation("ProcessedApplications")
   promoCodeUsages       PromoCodeUsage[]
-  chatsAsUser           Chat[]                @relation("UserChats")
-  chatsAsManager        Chat[]                @relation("ManagerChats")
+  chatsAsUser           Chat[]              @relation("UserChats")
+  chatsAsManager        Chat[]              @relation("ManagerChats")
+  bugReports            BugReport[]         @relation("UserBugReports")
 
   @@index([role])
   @@index([referralCode])
@@ -85,11 +86,11 @@ model ServiceCategory {
   slug        String   @unique
   description String?
   icon        String?
-  image       String?  // Ссылка на изображение категории
+  image       String? // Ссылка на изображение категории
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  services Service[]
+  services      Service[]
   homePageItems HomePageSectionItem[]
 
   @@map("service_categories")
@@ -101,15 +102,15 @@ model Service {
   slug        String
   description String?
   price       Float?
-  image       String?  // Ссылка на изображение услуги
-  time        String?  // Время выполнения работы (например, "1-2 часа", "1 день")
+  image       String? // Ссылка на изображение услуги
+  time        String? // Время выполнения работы (например, "1-2 часа", "1 день")
   categoryId  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  category ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  orders    OrderItem[]
-  cities    ServiceCity[] // Связь с городами через промежуточную таблицу
+  category      ServiceCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orders        OrderItem[]
+  cities        ServiceCity[] // Связь с городами через промежуточную таблицу
   homePageItems HomePageSectionItem[]
 
   @@unique([categoryId, slug])
@@ -196,14 +197,14 @@ model OrderStep {
 }
 
 model Referral {
-  id         String         @id @default(cuid())
-  referrerId String
-  referredId String         @unique
-  points     Int            @default(0)
-  status     ReferralStatus @default(PENDING)
+  id          String         @id @default(cuid())
+  referrerId  String
+  referredId  String         @unique
+  points      Int            @default(0)
+  status      ReferralStatus @default(PENDING)
   completedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
   referred User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
@@ -221,10 +222,10 @@ enum ReferralStatus {
 model PromoCode {
   id           String    @id @default(cuid())
   code         String    @unique
-  description  String?   // Описание промокода
+  description  String? // Описание промокода
   points       Int       @default(0) // Количество баллов за активацию
-  discount     Float?    // Скидка (если используется)
-  discountType String?   // "percentage" | "fixed"
+  discount     Float? // Скидка (если используется)
+  discountType String? // "percentage" | "fixed"
   minAmount    Float?
   maxDiscount  Float?
   expiresAt    DateTime?
@@ -241,11 +242,11 @@ model PromoCode {
 }
 
 model PromoCodeUsage {
-  id         String   @id @default(cuid())
+  id          String   @id @default(cuid())
   promoCodeId String
-  userId     String
-  points     Int      @default(0) // Баллы, полученные за активацию
-  createdAt  DateTime @default(now())
+  userId      String
+  points      Int      @default(0) // Баллы, полученные за активацию
+  createdAt   DateTime @default(now())
 
   promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -277,21 +278,21 @@ enum StepStatus {
 }
 
 model MasterApplication {
-  id             String                    @id @default(cuid())
-  userId         String                    @unique
-  name           String
-  phone          String
-  email          String?
-  experience     String?                   // Опыт работы (лет)
-  specialties    String[]                  // Специализации (массив строк)
-  description    String?                   // Описание о себе
-  status         MasterApplicationStatus   @default(PENDING)
-  processedAt    DateTime?
-  processedById  String?                   // ID админа, который обработал заявку
-  processedBy    User?                     @relation("ProcessedApplications", fields: [processedById], references: [id], onDelete: SetNull)
-  rejectionReason String?                  // Причина отклонения
-  createdAt      DateTime                  @default(now())
-  updatedAt      DateTime                  @updatedAt
+  id              String                  @id @default(cuid())
+  userId          String                  @unique
+  name            String
+  phone           String
+  email           String?
+  experience      String? // Опыт работы (лет)
+  specialties     String[] // Специализации (массив строк)
+  description     String? // Описание о себе
+  status          MasterApplicationStatus @default(PENDING)
+  processedAt     DateTime?
+  processedById   String? // ID админа, который обработал заявку
+  processedBy     User?                   @relation("ProcessedApplications", fields: [processedById], references: [id], onDelete: SetNull)
+  rejectionReason String? // Причина отклонения
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -321,8 +322,8 @@ model Chat {
   updatedAt DateTime   @updatedAt
   closedAt  DateTime?
 
-  user    User      @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
-  manager User?     @relation("ManagerChats", fields: [managerId], references: [id], onDelete: SetNull)
+  user     User          @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
+  manager  User?         @relation("ManagerChats", fields: [managerId], references: [id], onDelete: SetNull)
   messages ChatMessage[]
 
   @@index([userId])
@@ -332,12 +333,12 @@ model Chat {
 }
 
 model ChatMessage {
-  id        String   @id @default(cuid())
-  chatId    String
-  text      String
-  isFromUser Boolean @default(true) // true - от пользователя, false - от менеджера
-  readAt    DateTime?
-  createdAt DateTime @default(now())
+  id         String    @id @default(cuid())
+  chatId     String
+  text       String
+  isFromUser Boolean   @default(true) // true - от пользователя, false - от менеджера
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
 
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
@@ -347,45 +348,136 @@ model ChatMessage {
 }
 
 enum HomePageSectionType {
-  QUICK_SERVICES    // Быстрые услуги (категории)
+  QUICK_SERVICES // Быстрые услуги (категории)
   SERVICE_CATEGORIES // Категории услуг
-  SEASONAL_SERVICES  // Сезонные услуги (конкретные услуги)
+  SEASONAL_SERVICES // Сезонные услуги (конкретные услуги)
 }
 
 model HomePageSection {
-  id          String                @id @default(cuid())
-  type        HomePageSectionType
-  title       String?               // Заголовок секции (например, "Часто заказывают осенью")
-  isActive    Boolean               @default(true)
-  order       Int                   @default(0) // Порядок отображения
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  id        String              @id @default(cuid())
+  type      HomePageSectionType
+  title     String? // Заголовок секции (например, "Часто заказывают осенью")
+  icon      String? // Иконка секции (отображается слева от заголовка)
+  isActive  Boolean             @default(true)
+  order     Int                 @default(0) // Порядок отображения
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
 
-  items       HomePageSectionItem[]
+  items HomePageSectionItem[]
 
-  @@unique([type])
   @@index([type])
   @@index([isActive])
+  @@index([order])
   @@map("home_page_sections")
 }
 
 model HomePageSectionItem {
-  id          String            @id @default(cuid())
-  sectionId   String
-  section     HomePageSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  
+  id        String          @id @default(cuid())
+  sectionId String
+  section   HomePageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
   // Ссылка на категорию или услугу
-  categoryId  String?
-  category    ServiceCategory?  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  serviceId   String?
-  service     Service?         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  
-  order       Int               @default(0) // Порядок отображения в секции
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  categoryId String?
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  serviceId  String?
+  service    Service?         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  order     Int      @default(0) // Порядок отображения в секции
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sectionId])
   @@index([categoryId])
   @@index([serviceId])
   @@map("home_page_section_items")
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  title     String
+  image     String? // Изображение для превью карточки
+  isActive  Boolean  @default(true)
+  order     Int      @default(0) // Порядок отображения
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images StoryImage[]
+
+  @@index([isActive])
+  @@index([order])
+  @@map("stories")
+}
+
+model StoryImage {
+  id        String   @id @default(cuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  image     String // URL изображения
+  title     String? // Заголовок на изображении
+  duration  Int      @default(15000) // Длительность показа в миллисекундах
+  order     Int      @default(0) // Порядок отображения
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storyId])
+  @@index([order])
+  @@map("story_images")
+}
+
+enum BugReportCategory {
+  UI
+  PERFORMANCE
+  FUNCTIONALITY
+  DATA
+  OTHER
+}
+
+enum BugReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum BugReportStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model BugReport {
+  id          String            @id @default(cuid())
+  userId      String?
+  user        User?             @relation("UserBugReports", fields: [userId], references: [id], onDelete: SetNull)
+  category    BugReportCategory
+  priority    BugReportPriority @default(MEDIUM)
+  status      BugReportStatus   @default(NEW)
+  description String
+  steps       String?
+  email       String
+  logFileUrl  String? // URL лог-файла в S3
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  resolvedAt  DateTime?
+
+  images BugReportImage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@map("bug_reports")
+}
+
+model BugReportImage {
+  id          String    @id @default(cuid())
+  bugReportId String
+  bugReport   BugReport @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  imageUrl    String // URL изображения в S3
+  order       Int       @default(0) // Порядок отображения
+  createdAt   DateTime  @default(now())
+
+  @@index([bugReportId])
+  @@index([order])
+  @@map("bug_report_images")
 }

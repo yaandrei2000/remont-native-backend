@@ -9,6 +9,10 @@ export class CreateHomePageSectionDto {
   @IsOptional()
   title?: string;
 
+  @IsString()
+  @IsOptional()
+  icon?: string;
+
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
@@ -18,4 +22,5 @@ export class CreateHomePageSectionDto {
   @IsOptional()
   order?: number;
 }
+
 

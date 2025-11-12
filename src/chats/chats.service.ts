@@ -6,6 +6,79 @@ import { SendMessageDto } from './dto/send-message.dto';
 export class ChatsService {
   constructor(private prisma: PrismaService) {}
 
+  // Получить все чаты пользователя
+  async getUserChats(userId: string) {
+    const chats = await this.prisma.chat.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1, // Последнее сообщение
+        },
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+        _count: {
+          select: {
+            messages: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
+
+    return chats;
+  }
+
+  // Получить чат по ID для пользователя
+  async getUserChatById(userId: string, chatId: string) {
+    const chat = await this.prisma.chat.findUnique({
+      where: { id: chatId },
+      include: {
+        messages: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            phone: true,
+          },
+        },
+        manager: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+          },
+        },
+      },
+    });
+
+    if (!chat) {
+      throw new NotFoundException('Чат не найден');
+    }
+
+    if (chat.userId !== userId) {
+      throw new BadRequestException('Нет доступа к этому чату');
+    }
+
+    return chat;
+  }
+
   // Получить или создать чат для пользователя
   async getOrCreateUserChat(userId: string) {
     // Ищем активный чат пользователя

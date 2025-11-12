@@ -1,9 +1,12 @@
 import { IsString, IsOptional, IsBoolean, IsInt, Min } from 'class-validator';
 
-export class UpdateHomePageSectionDto {
+export class CreateStoryDto {
+  @IsString()
+  title: string;
+
   @IsString()
   @IsOptional()
-  title?: string;
+  image?: string;
 
   @IsBoolean()
   @IsOptional()
@@ -14,5 +17,4 @@ export class UpdateHomePageSectionDto {
   @IsOptional()
   order?: number;
 }
-
 
