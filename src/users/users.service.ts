@@ -17,7 +17,8 @@ export class UsersService {
     const endpoint = this.configService.get<string>('S3_ENDPOINT');
     const bucket = this.configService.get<string>('S3_BUCKET_NAME');
     if (endpoint && bucket) {
-      const url = endpoint.replace(/\/$/, '');
+      // Удаляем протокол, если он есть, и завершающий слэш
+      const url = endpoint.replace(/^https?:\/\//, '').replace(/\/$/, '');
       return `https://${url}/${bucket}`;
     }
     return '';
