@@ -16,6 +16,7 @@ model User {
   firstName    String?
   lastName     String?
   email        String?
+  avatar       String?  // Ссылка на аватарку в S3
   points       Int      @default(0)
   role         UserRole @default(CLIENT)
   // Поля для мастеров

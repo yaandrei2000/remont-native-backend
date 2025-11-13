@@ -12,6 +12,10 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   email?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
 }
 
 

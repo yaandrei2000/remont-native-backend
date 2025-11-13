@@ -1,4 +1,5 @@
-import { Controller, Get, Patch, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, UseGuards, UseInterceptors, UploadedFile, UsePipes, ValidationPipe } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -17,8 +18,20 @@ export class UsersController {
   }
 
   @Patch('me')
-  async updateProfile(@CurrentUser() user: any, @Body() dto: UpdateProfileDto) {
-    return this.usersService.updateProfile(user.id, dto);
+  @UseInterceptors(FileInterceptor('avatar'))
+  @UsePipes(new ValidationPipe({ skipMissingProperties: true, transform: true }))
+  async updateProfile(
+    @CurrentUser() user: any,
+    @Body() body: any,
+    @UploadedFile() avatarFile?: Express.Multer.File,
+  ) {
+    const dto: UpdateProfileDto = {
+      firstName: body.firstName,
+      lastName: body.lastName,
+      email: body.email,
+      avatar: body.avatar,
+    };
+    return this.usersService.updateProfile(user.id, dto, avatarFile);
   }
 
   @Patch('me/city')
