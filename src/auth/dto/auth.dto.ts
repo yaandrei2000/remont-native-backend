@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Length, Matches } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, Length, Matches } from 'class-validator';
 
 export class SendCodeDto {
   @IsString()
@@ -21,6 +21,26 @@ export class VerifyCodeDto {
   @IsNotEmpty()
   @Length(4, 4)
   code: string;
+
+  @IsString()
+  @IsNotEmpty()
+  deviceInfo: string;
+
+  @IsString()
+  @IsOptional()
+  deviceModel?: string;
+
+  @IsString()
+  @IsOptional()
+  deviceName?: string;
+
+  @IsString()
+  @IsOptional()
+  osName?: string;
+
+  @IsString()
+  @IsOptional()
+  osVersion?: string;
 }
 
 export class RefreshTokenDto {

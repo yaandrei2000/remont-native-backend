@@ -15,12 +15,17 @@ import { ChatsModule } from './chats/chats.module';
 import { HomePageModule } from './home-page/home-page.module';
 import { StoriesModule } from './stories/stories.module';
 import { BugReportsModule } from './bug-reports/bug-reports.module';
+import { RedisModule } from './libs/redis/redis.module';
+import { SessionsModule } from './sessions/sessions.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaModule,
     StorageModule,
+    RedisModule,
+    SessionsModule,
     AuthModule,
     UsersModule,
     ServicesModule,
@@ -34,6 +39,7 @@ import { BugReportsModule } from './bug-reports/bug-reports.module';
     HomePageModule,
     StoriesModule,
     BugReportsModule,
+    ReviewsModule,
   ]
 })
 export class AppModule {}

@@ -1,6 +1,8 @@
-import { Controller, Get, Patch, Post, Body, UseGuards, UseInterceptors, UploadedFile, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Patch, Post, Body, UseGuards, UseInterceptors, UploadedFile, UsePipes, ValidationPipe, Req } from '@nestjs/common';
+import type { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
+import { SessionsService } from '../sessions/sessions.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -10,7 +12,10 @@ import { CreateMasterApplicationDto } from '../admin/dto/create-master-applicati
 @Controller('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly sessionsService: SessionsService,
+  ) {}
 
   @Get('me')
   async getProfile(@CurrentUser() user: any) {
@@ -52,6 +57,23 @@ export class UsersController {
   @Post('me/master-application')
   async createMasterApplication(@CurrentUser() user: any, @Body() dto: CreateMasterApplicationDto) {
     return this.usersService.createMasterApplication(user.id, dto);
+  }
+
+  @Post('me/logout')
+  async logout(@CurrentUser() user: any, @Req() req: Request) {
+    // Удаляем push token
+    await this.usersService.logout(user.id);
+    
+    // Удаляем текущую сессию
+    const accessToken = req.headers.authorization?.replace('Bearer ', '');
+    if (accessToken) {
+      const sessionData = await this.sessionsService.findSessionByToken(accessToken, 'access');
+      if (sessionData) {
+        await this.sessionsService.deleteSession(user.id, sessionData.sessionId);
+      }
+    }
+    
+    return { message: 'Logged out successfully' };
   }
 }
 

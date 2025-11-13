@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { SessionsService } from '../sessions/sessions.service';
 import { SendCodeDto, VerifyCodeDto, RefreshTokenDto } from './dto/auth.dto';
 
 @Injectable()
@@ -10,6 +11,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private sessionsService: SessionsService,
   ) {}
 
   async sendCode(dto: SendCodeDto) {
@@ -36,7 +38,18 @@ export class AuthService {
     };
   }
 
-  async verifyCode(dto: VerifyCodeDto) {
+  async verifyCode(
+    dto: VerifyCodeDto,
+    metadata?: { 
+      deviceInfo?: string; 
+      deviceModel?: string;
+      deviceName?: string;
+      osName?: string;
+      osVersion?: string;
+      userAgent?: string; 
+      ipAddress?: string;
+    },
+  ) {
     const authCode = await this.prisma.authCode.findFirst({
       where: {
         phone: dto.phone,
@@ -78,6 +91,16 @@ export class AuthService {
     // Генерируем токены
     const tokens = await this.generateTokens(user.id, user.phone);
 
+    // Создаем сессию в Redis
+    if (metadata) {
+      await this.sessionsService.createSession(
+        user.id,
+        tokens.accessToken,
+        tokens.refreshToken,
+        metadata,
+      );
+    }
+
     return {
       user: {
         id: user.id,
@@ -91,7 +114,10 @@ export class AuthService {
     };
   }
 
-  async refreshToken(dto: RefreshTokenDto) {
+  async refreshToken(
+    dto: RefreshTokenDto,
+    metadata?: { userAgent?: string; ipAddress?: string },
+  ) {
     try {
       const payload = this.jwtService.verify(dto.refreshToken, {
         secret: this.configService.get('JWT_REFRESH_SECRET'),
@@ -106,6 +132,35 @@ export class AuthService {
       }
 
       const tokens = await this.generateTokens(user.id, user.phone);
+
+      // Обновляем сессию или создаем новую при refresh
+      if (metadata) {
+        // Пытаемся найти существующую сессию по старому refresh токену
+        const existingSessionData = await this.sessionsService.findSessionByToken(dto.refreshToken, 'refresh');
+        if (existingSessionData) {
+          // Обновляем токены и активность существующей сессии
+          const session = existingSessionData.session;
+          session.accessToken = tokens.accessToken;
+          session.refreshToken = tokens.refreshToken;
+          session.lastActivity = Date.now();
+          
+          const sessionKey = `session:${existingSessionData.sessionId}`;
+          await this.sessionsService.getClient().set(
+            sessionKey,
+            JSON.stringify(session),
+            'EX',
+            7 * 24 * 60 * 60, // 7 дней
+          );
+        } else {
+          // Создаем новую сессию
+          await this.sessionsService.createSession(
+            user.id,
+            tokens.accessToken,
+            tokens.refreshToken,
+            metadata,
+          );
+        }
+      }
 
       return tokens;
     } catch (error) {

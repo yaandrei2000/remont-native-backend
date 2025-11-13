@@ -1,0 +1,46 @@
+enum UserRole {
+  CLIENT
+  MASTER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  firstName    String?
+  lastName     String?
+  email        String?
+  avatar       String? // Ссылка на аватарку в S3
+  points       Int      @default(0)
+  role         UserRole @default(CLIENT)
+  // Поля для мастеров
+  rating       Float?   @default(0)
+  reviewsCount Int?     @default(0)
+  isActive     Boolean? @default(true)
+  cityId       String?
+  city         City?    @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  // Push notification token
+  pushToken    String?
+  // Реферальный код пользователя
+  referralCode String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ordersAsClient        Order[]             @relation("ClientOrders")
+  ordersAsMaster        Order[]             @relation("MasterOrders")
+  referrals             Referral[]          @relation("Referrer")
+  referred              Referral?           @relation("Referred")
+  masterApplication     MasterApplication?
+  processedApplications MasterApplication[] @relation("ProcessedApplications")
+  promoCodeUsages       PromoCodeUsage[]
+  chatsAsUser           Chat[]              @relation("UserChats")
+  chatsAsManager        Chat[]              @relation("ManagerChats")
+  bugReports            BugReport[]         @relation("UserBugReports")
+  reviewsGiven          Review[]            @relation("ReviewAuthor")
+  reviewsReceived       Review[]            @relation("ReviewMaster")
+
+  @@index([role])
+  @@index([referralCode])
+  @@map("users")
+}
+

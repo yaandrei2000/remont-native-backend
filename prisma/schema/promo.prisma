@@ -1,0 +1,38 @@
+model PromoCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  description  String? // Описание промокода
+  points       Int       @default(0) // Количество баллов за активацию
+  discount     Float? // Скидка (если используется)
+  discountType String? // "percentage" | "fixed"
+  minAmount    Float?
+  maxDiscount  Float?
+  expiresAt    DateTime?
+  usageLimit   Int?
+  usedCount    Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  usages PromoCodeUsage[]
+
+  @@index([isActive])
+  @@map("promo_codes")
+}
+
+model PromoCodeUsage {
+  id          String   @id @default(cuid())
+  promoCodeId String
+  userId      String
+  points      Int      @default(0) // Баллы, полученные за активацию
+  createdAt   DateTime @default(now())
+
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([promoCodeId, userId]) // Пользователь может использовать промокод только один раз
+  @@index([userId])
+  @@index([promoCodeId])
+  @@map("promo_code_usages")
+}
+

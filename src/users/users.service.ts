@@ -174,6 +174,17 @@ export class UsersService {
     });
   }
 
+  async logout(userId: string) {
+    // Удаляем push token при выходе
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { pushToken: null },
+      select: {
+        id: true,
+      },
+    });
+  }
+
   async createMasterApplication(userId: string, dto: CreateMasterApplicationDto) {
     // Проверяем, есть ли уже заявка у пользователя
     const existingApplication = await this.prisma.masterApplication.findUnique({
@@ -246,6 +257,3 @@ export class UsersService {
     return application;
   }
 }
-
-
-
