@@ -253,6 +253,7 @@ export class HomePageService {
       data: {
         categoryId: dto.categoryId !== undefined ? dto.categoryId : item.categoryId,
         serviceId: dto.serviceId !== undefined ? dto.serviceId : item.serviceId,
+        imageUrl: dto.imageUrl !== undefined ? dto.imageUrl : item.imageUrl,
         order: dto.order !== undefined ? dto.order : item.order,
       },
       include: {

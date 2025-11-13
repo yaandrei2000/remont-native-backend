@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Query, Patch } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateUrgentOrderDto } from './dto/create-urgent-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -15,6 +16,11 @@ export class OrdersController {
   @UseGuards(JwtAuthGuard)
   async createOrder(@Body() dto: CreateOrderDto, @CurrentUser() user: any) {
     return this.ordersService.createOrder(dto, user?.id);
+  }
+
+  @Post('urgent')
+  async createUrgentOrder(@Body() dto: CreateUrgentOrderDto) {
+    return this.ordersService.createUrgentOrder(dto);
   }
 
   @Get()

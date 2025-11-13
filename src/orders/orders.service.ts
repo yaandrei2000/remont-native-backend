@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateUrgentOrderDto } from './dto/create-urgent-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CancelOrderDto } from './dto/cancel-order.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
@@ -132,6 +133,105 @@ export class OrdersService {
 
     // Отправляем уведомления всем активным мастерам в городе заказа
     this.notifyMastersAboutNewOrder(order.id, dto.city).catch((error) => {
+      console.error('Failed to notify masters about new order:', error);
+    });
+
+    return order;
+  }
+
+  async createUrgentOrder(dto: CreateUrgentOrderDto) {
+    // Генерируем номер заказа
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Очищаем телефон от форматирования
+    const cleanPhone = dto.phone.replace(/\D/g, '');
+    const formattedPhone = cleanPhone.startsWith('7') 
+      ? `+${cleanPhone}` 
+      : `+7${cleanPhone}`;
+
+    // Определяем город (используем переданный или дефолтный)
+    const city = dto.city || 'Владимир';
+
+    // Находим или создаем пользователя по телефону
+    let user = await this.prisma.user.findUnique({
+      where: { phone: formattedPhone },
+    });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          phone: formattedPhone,
+          points: 0,
+          role: 'CLIENT',
+        },
+      });
+    }
+
+    // Создаем заказ с минимальными данными и привязываем к пользователю
+    const order = await this.prisma.order.create({
+      data: {
+        orderNumber,
+        clientId: user.id, // Привязываем заказ к пользователю
+        recipient: 'me',
+        clientName: formattedPhone, // Используем телефон как имя
+        clientPhone: formattedPhone,
+        city: city,
+        address: 'Адрес будет уточнен', // Дефолтное значение
+        apartment: '',
+        isPrivateHouse: false,
+        urgency: 'URGENT',
+        scheduledDate: null,
+        scheduledTime: null,
+        totalPrice: null, // Цена будет определена мастером
+        workDescription: dto.description || null,
+        status: 'PENDING',
+        steps: {
+          create: [
+            {
+              title: 'Заявка принята',
+              description: 'Ваша срочная заявка принята в обработку',
+              status: 'COMPLETED',
+              completedAt: new Date(),
+            },
+            {
+              title: 'Мастер назначен',
+              description: 'Ожидайте назначения мастера',
+              status: 'PENDING',
+            },
+            {
+              title: 'Мастер в пути',
+              description: 'Мастер выехал к вам',
+              status: 'PENDING',
+            },
+            {
+              title: 'Диагностика',
+              description: 'Проводится диагностика',
+              status: 'PENDING',
+            },
+            {
+              title: 'Выполнение работ',
+              description: 'Мастер выполняет работы',
+              status: 'PENDING',
+            },
+            {
+              title: 'Заказ завершен',
+              description: 'Все работы выполнены, заказ закрыт',
+              status: 'PENDING',
+            },
+          ],
+        },
+      },
+      include: {
+        steps: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+    });
+
+    // Отправляем уведомления всем активным мастерам в городе заказа
+    this.notifyMastersAboutNewOrder(order.id, city).catch((error) => {
       console.error('Failed to notify masters about new order:', error);
     });
 

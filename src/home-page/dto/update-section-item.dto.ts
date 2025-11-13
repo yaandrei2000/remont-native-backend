@@ -9,6 +9,10 @@ export class UpdateSectionItemDto {
   @IsOptional()
   serviceId?: string;
 
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
+
   @IsInt()
   @Min(0)
   @IsOptional()
