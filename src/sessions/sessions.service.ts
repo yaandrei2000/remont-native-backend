@@ -20,13 +20,8 @@ export class SessionsService {
   private readonly SESSION_TTL = 7 * 24 * 60 * 60; // 7 дней в секундах
 
   constructor(
-    private redisService: RedisService,
-    private configService: ConfigService,
+    private readonly redisService: RedisService,
   ) {}
-
-  getClient() {
-    return this.redisService.getClient();
-  }
 
   async createSession(
     userId: string,
@@ -55,10 +50,10 @@ export class SessionsService {
     };
 
     // Сохраняем сессию
-    await this.redisService.set(
+    await this.redisService.setex(
       sessionKey,
-      JSON.stringify(sessionData),
       this.SESSION_TTL,
+      JSON.stringify(sessionData)
     );
 
     // Добавляем sessionId в список сессий пользователя
@@ -86,10 +81,10 @@ export class SessionsService {
     if (data) {
       const session = JSON.parse(data) as SessionMetadata;
       session.lastActivity = Date.now();
-      await this.redisService.set(
+      await this.redisService.setex(
         sessionKey,
-        JSON.stringify(session),
         this.SESSION_TTL,
+        JSON.stringify(session)
       );
     }
   }
