@@ -122,7 +122,9 @@ const config = {
         "native": true
       }
     ],
-    "previewFeatures": [],
+    "previewFeatures": [
+      "prismaSchemaFolder"
+    ],
     "sourceFilePath": "C:\\Users\\prive\\Desktop\\remont\\backend\\prisma\\schema.prisma",
     "isCustomOutput": true
   },
@@ -146,8 +148,8 @@ const config = {
       }
     }
   },
-  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider = \"prisma-client-js\"\n  output   = \"./generated\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n",
-  "inlineSchemaHash": "27eb8aea4a8a46f0d4cbcd9cba855b17c2aba1f75424f0d0b2bebd415226bb22",
+  "inlineSchema": "// This is your Prisma schema file,\n// learn more about it in the docs: https://pris.ly/d/prisma-schema\n\ngenerator client {\n  provider        = \"prisma-client-js\"\n  output          = \"./generated\"\n  previewFeatures = [\"prismaSchemaFolder\"]\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n",
+  "inlineSchemaHash": "1828578452cd61a46975e4bc47a307f3e025cb3bfb0b3cb7b42d1d9f8d058a82",
   "copyEngine": true
 }
 
