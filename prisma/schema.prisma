@@ -11,3 +11,507 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model AuthCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+  @@map("auth_codes")
+}
+
+enum BugReportCategory {
+  UI
+  PERFORMANCE
+  FUNCTIONALITY
+  DATA
+  OTHER
+}
+
+enum BugReportPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum BugReportStatus {
+  NEW
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model BugReport {
+  id          String            @id @default(cuid())
+  userId      String?
+  user        User?             @relation("UserBugReports", fields: [userId], references: [id], onDelete: SetNull)
+  category    BugReportCategory
+  priority    BugReportPriority @default(MEDIUM)
+  status      BugReportStatus   @default(NEW)
+  description String
+  steps       String?
+  email       String
+  logFileUrl  String? // URL лог-файла в S3
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  resolvedAt  DateTime?
+
+  images BugReportImage[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
+  @@index([createdAt])
+  @@map("bug_reports")
+}
+
+model BugReportImage {
+  id          String    @id @default(cuid())
+  bugReportId String
+  bugReport   BugReport @relation(fields: [bugReportId], references: [id], onDelete: Cascade)
+  imageUrl    String // URL изображения в S3
+  order       Int       @default(0) // Порядок отображения
+  createdAt   DateTime  @default(now())
+
+  @@index([bugReportId])
+  @@index([order])
+  @@map("bug_report_images")
+}
+
+enum ChatStatus {
+  NEW
+  ACTIVE
+  CLOSED
+}
+
+model Chat {
+  id        String     @id @default(cuid())
+  userId    String
+  managerId String?
+  status    ChatStatus @default(NEW)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  closedAt  DateTime?
+
+  user     User          @relation("UserChats", fields: [userId], references: [id], onDelete: Cascade)
+  manager  User?         @relation("ManagerChats", fields: [managerId], references: [id], onDelete: SetNull)
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@index([managerId])
+  @@index([status])
+  @@map("chats")
+}
+
+model ChatMessage {
+  id         String    @id @default(cuid())
+  chatId     String
+  text       String
+  isFromUser Boolean   @default(true) // true - от пользователя, false - от менеджера
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+model City {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  region    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  services ServiceCity[] // Связь с услугами через промежуточную таблицу
+
+  @@index([name])
+  @@map("cities")
+}
+
+enum HomePageSectionType {
+  QUICK_SERVICES // Быстрые услуги (категории)
+  SERVICE_CATEGORIES // Категории услуг
+  SEASONAL_SERVICES // Сезонные услуги (конкретные услуги)
+  PROMO_SERVICES // Промо-услуги (большие карточки с изображениями)
+}
+
+model HomePageSection {
+  id        String              @id @default(cuid())
+  type      HomePageSectionType
+  title     String? // Заголовок секции (например, "Часто заказывают осенью")
+  icon      String? // Иконка секции (отображается слева от заголовка)
+  isActive  Boolean             @default(true)
+  order     Int                 @default(0) // Порядок отображения
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  items HomePageSectionItem[]
+
+  @@index([type])
+  @@index([isActive])
+  @@index([order])
+  @@map("home_page_sections")
+}
+
+model HomePageSectionItem {
+  id        String          @id @default(cuid())
+  sectionId String
+  section   HomePageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+
+  // Ссылка на категорию или услугу
+  categoryId String?
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  serviceId  String?
+  service    Service?         @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  // Изображение для промо-карточки (используется для PROMO_SERVICES)
+  imageUrl String?
+
+  order     Int      @default(0) // Порядок отображения в секции
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([sectionId])
+  @@index([categoryId])
+  @@index([serviceId])
+  @@map("home_page_section_items")
+}
+
+enum MasterApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model MasterApplication {
+  id              String                  @id @default(cuid())
+  userId          String                  @unique
+  name            String
+  phone           String
+  email           String?
+  experience      String? // Опыт работы (лет)
+  specialties     String[] // Специализации (массив строк)
+  description     String? // Описание о себе
+  status          MasterApplicationStatus @default(PENDING)
+  processedAt     DateTime?
+  processedById   String? // ID админа, который обработал заявку
+  processedBy     User?                   @relation("ProcessedApplications", fields: [processedById], references: [id], onDelete: SetNull)
+  rejectionReason String? // Причина отклонения
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+  @@map("master_applications")
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderUrgency {
+  URGENT
+  SCHEDULED
+}
+
+enum StepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Order {
+  id              String       @id @default(cuid())
+  orderNumber     String       @unique
+  clientId        String?
+  masterId        String?
+  status          OrderStatus  @default(PENDING)
+  recipient       String       @default("me")
+  clientName      String
+  clientPhone     String
+  city            String
+  address         String
+  apartment       String?
+  isPrivateHouse  Boolean      @default(false)
+  urgency         OrderUrgency @default(URGENT)
+  scheduledDate   DateTime?
+  scheduledTime   String?
+  totalPrice      Float?
+  workDescription String?
+  warranty        String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  completedAt     DateTime?
+
+  client User?       @relation("ClientOrders", fields: [clientId], references: [id], onDelete: SetNull)
+  master User?       @relation("MasterOrders", fields: [masterId], references: [id], onDelete: SetNull)
+  items  OrderItem[]
+  steps  OrderStep[]
+  review Review?
+
+  @@index([clientId])
+  @@index([masterId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String
+  serviceId String
+  quantity  Int      @default(1)
+  price     Float
+  createdAt DateTime @default(now())
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model OrderStep {
+  id          String     @id @default(cuid())
+  orderId     String
+  title       String
+  description String?
+  status      StepStatus @default(PENDING)
+  completedAt DateTime?
+  createdAt   DateTime   @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("order_steps")
+}
+
+model PromoCode {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  description  String? // Описание промокода
+  points       Int       @default(0) // Количество баллов за активацию
+  discount     Float? // Скидка (если используется)
+  discountType String? // "percentage" | "fixed"
+  minAmount    Float?
+  maxDiscount  Float?
+  expiresAt    DateTime?
+  usageLimit   Int?
+  usedCount    Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  usages PromoCodeUsage[]
+
+  @@index([isActive])
+  @@map("promo_codes")
+}
+
+model PromoCodeUsage {
+  id          String   @id @default(cuid())
+  promoCodeId String
+  userId      String
+  points      Int      @default(0) // Баллы, полученные за активацию
+  createdAt   DateTime @default(now())
+
+  promoCode PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([promoCodeId, userId]) // Пользователь может использовать промокод только один раз
+  @@index([userId])
+  @@index([promoCodeId])
+  @@map("promo_code_usages")
+}
+
+enum ReferralStatus {
+  PENDING
+  COMPLETED
+}
+
+model Referral {
+  id          String         @id @default(cuid())
+  referrerId  String
+  referredId  String         @unique
+  points      Int            @default(0)
+  status      ReferralStatus @default(PENDING)
+  completedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  referrer User @relation("Referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred User @relation("Referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId])
+  @@index([status])
+  @@map("referrals")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  serviceId String
+  authorId  String
+  masterId  String?
+  rating    Int // Оценка от 1 до 5
+  comment   String? // Текст отзыва
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  author  User    @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  master  User?   @relation("ReviewMaster", fields: [masterId], references: [id], onDelete: SetNull)
+
+  @@index([serviceId])
+  @@index([masterId])
+  @@index([authorId])
+  @@index([rating])
+  @@map("reviews")
+}
+
+model ServiceCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  icon        String?
+  image       String? // Ссылка на изображение категории
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  services      Service[]
+  homePageItems HomePageSectionItem[]
+
+  @@map("service_categories")
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String
+  description String?
+  price       Float?
+  image       String? // Ссылка на изображение услуги
+  time        String? // Время выполнения работы (например, "1-2 часа", "1 день")
+  categoryId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category      ServiceCategory       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orders        OrderItem[]
+  cities        ServiceCity[] // Связь с городами через промежуточную таблицу
+  homePageItems HomePageSectionItem[]
+  reviews       Review[]
+
+  @@unique([categoryId, slug])
+  @@map("services")
+}
+
+// Промежуточная таблица для связи услуг с городами (many-to-many)
+model ServiceCity {
+  id        String   @id @default(cuid())
+  serviceId String
+  cityId    String
+  createdAt DateTime @default(now())
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  city    City    @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceId, cityId]) // Одна услуга может быть в городе только один раз
+  @@index([cityId])
+  @@index([serviceId])
+  @@map("service_cities")
+}
+
+model Story {
+  id        String   @id @default(cuid())
+  title     String
+  image     String? // Изображение для превью карточки
+  isActive  Boolean  @default(true)
+  order     Int      @default(0) // Порядок отображения
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  images StoryImage[]
+
+  @@index([isActive])
+  @@index([order])
+  @@map("stories")
+}
+
+model StoryImage {
+  id        String   @id @default(cuid())
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  image     String // URL изображения
+  title     String? // Заголовок на изображении
+  duration  Int      @default(15000) // Длительность показа в миллисекундах
+  order     Int      @default(0) // Порядок отображения
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([storyId])
+  @@index([order])
+  @@map("story_images")
+}
+
+enum UserRole {
+  CLIENT
+  MASTER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  firstName    String?
+  lastName     String?
+  email        String?
+  avatar       String? // Ссылка на аватарку в S3
+  points       Int      @default(0)
+  role         UserRole @default(CLIENT)
+  // Поля для мастеров
+  rating       Float?   @default(0)
+  reviewsCount Int?     @default(0)
+  isActive     Boolean? @default(true)
+  cityId       String?
+  city         City?    @relation(fields: [cityId], references: [id], onDelete: SetNull)
+  // Push notification token
+  pushToken    String?
+  // Реферальный код пользователя
+  referralCode String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ordersAsClient        Order[]             @relation("ClientOrders")
+  ordersAsMaster        Order[]             @relation("MasterOrders")
+  referrals             Referral[]          @relation("Referrer")
+  referred              Referral?           @relation("Referred")
+  masterApplication     MasterApplication?
+  processedApplications MasterApplication[] @relation("ProcessedApplications")
+  promoCodeUsages       PromoCodeUsage[]
+  chatsAsUser           Chat[]              @relation("UserChats")
+  chatsAsManager        Chat[]              @relation("ManagerChats")
+  bugReports            BugReport[]         @relation("UserBugReports")
+  reviewsGiven          Review[]            @relation("ReviewAuthor")
+  reviewsReceived       Review[]            @relation("ReviewMaster")
+
+  @@index([role])
+  @@index([referralCode])
+  @@map("users")
+}

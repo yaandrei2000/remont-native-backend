@@ -18,11 +18,10 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:merge": "node prisma/merge-schema.js",
-    "prisma:generate": "npm run prisma:merge && prisma generate",
-    "prisma:migrate": "npm run prisma:merge && prisma migrate dev",
-    "prisma:studio": "npm run prisma:merge && prisma studio",
-    "db:push": "npm run prisma:merge && prisma db push",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "db:push": "prisma db push",
     "prisma:seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {

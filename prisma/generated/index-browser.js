@@ -121,9 +121,375 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
   Serializable: 'Serializable'
 });
 
+exports.Prisma.AuthCodeScalarFieldEnum = {
+  id: 'id',
+  phone: 'phone',
+  code: 'code',
+  expiresAt: 'expiresAt',
+  used: 'used',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.BugReportScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  category: 'category',
+  priority: 'priority',
+  status: 'status',
+  description: 'description',
+  steps: 'steps',
+  email: 'email',
+  logFileUrl: 'logFileUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  resolvedAt: 'resolvedAt'
+};
+
+exports.Prisma.BugReportImageScalarFieldEnum = {
+  id: 'id',
+  bugReportId: 'bugReportId',
+  imageUrl: 'imageUrl',
+  order: 'order',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ChatScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  managerId: 'managerId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  closedAt: 'closedAt'
+};
+
+exports.Prisma.ChatMessageScalarFieldEnum = {
+  id: 'id',
+  chatId: 'chatId',
+  text: 'text',
+  isFromUser: 'isFromUser',
+  readAt: 'readAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.CityScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  region: 'region',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HomePageSectionScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  title: 'title',
+  icon: 'icon',
+  isActive: 'isActive',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HomePageSectionItemScalarFieldEnum = {
+  id: 'id',
+  sectionId: 'sectionId',
+  categoryId: 'categoryId',
+  serviceId: 'serviceId',
+  imageUrl: 'imageUrl',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.MasterApplicationScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  phone: 'phone',
+  email: 'email',
+  experience: 'experience',
+  specialties: 'specialties',
+  description: 'description',
+  status: 'status',
+  processedAt: 'processedAt',
+  processedById: 'processedById',
+  rejectionReason: 'rejectionReason',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.OrderScalarFieldEnum = {
+  id: 'id',
+  orderNumber: 'orderNumber',
+  clientId: 'clientId',
+  masterId: 'masterId',
+  status: 'status',
+  recipient: 'recipient',
+  clientName: 'clientName',
+  clientPhone: 'clientPhone',
+  city: 'city',
+  address: 'address',
+  apartment: 'apartment',
+  isPrivateHouse: 'isPrivateHouse',
+  urgency: 'urgency',
+  scheduledDate: 'scheduledDate',
+  scheduledTime: 'scheduledTime',
+  totalPrice: 'totalPrice',
+  workDescription: 'workDescription',
+  warranty: 'warranty',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt',
+  completedAt: 'completedAt'
+};
+
+exports.Prisma.OrderItemScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  serviceId: 'serviceId',
+  quantity: 'quantity',
+  price: 'price',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.OrderStepScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.PromoCodeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  description: 'description',
+  points: 'points',
+  discount: 'discount',
+  discountType: 'discountType',
+  minAmount: 'minAmount',
+  maxDiscount: 'maxDiscount',
+  expiresAt: 'expiresAt',
+  usageLimit: 'usageLimit',
+  usedCount: 'usedCount',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.PromoCodeUsageScalarFieldEnum = {
+  id: 'id',
+  promoCodeId: 'promoCodeId',
+  userId: 'userId',
+  points: 'points',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ReferralScalarFieldEnum = {
+  id: 'id',
+  referrerId: 'referrerId',
+  referredId: 'referredId',
+  points: 'points',
+  status: 'status',
+  completedAt: 'completedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ReviewScalarFieldEnum = {
+  id: 'id',
+  orderId: 'orderId',
+  serviceId: 'serviceId',
+  authorId: 'authorId',
+  masterId: 'masterId',
+  rating: 'rating',
+  comment: 'comment',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServiceCategoryScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  slug: 'slug',
+  description: 'description',
+  icon: 'icon',
+  image: 'image',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServiceScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  slug: 'slug',
+  description: 'description',
+  price: 'price',
+  image: 'image',
+  time: 'time',
+  categoryId: 'categoryId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ServiceCityScalarFieldEnum = {
+  id: 'id',
+  serviceId: 'serviceId',
+  cityId: 'cityId',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.StoryScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  image: 'image',
+  isActive: 'isActive',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.StoryImageScalarFieldEnum = {
+  id: 'id',
+  storyId: 'storyId',
+  image: 'image',
+  title: 'title',
+  duration: 'duration',
+  order: 'order',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UserScalarFieldEnum = {
+  id: 'id',
+  phone: 'phone',
+  firstName: 'firstName',
+  lastName: 'lastName',
+  email: 'email',
+  avatar: 'avatar',
+  points: 'points',
+  role: 'role',
+  rating: 'rating',
+  reviewsCount: 'reviewsCount',
+  isActive: 'isActive',
+  cityId: 'cityId',
+  pushToken: 'pushToken',
+  referralCode: 'referralCode',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.SortOrder = {
+  asc: 'asc',
+  desc: 'desc'
+};
+
+exports.Prisma.QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+};
+
+exports.Prisma.NullsOrder = {
+  first: 'first',
+  last: 'last'
+};
+exports.BugReportCategory = exports.$Enums.BugReportCategory = {
+  UI: 'UI',
+  PERFORMANCE: 'PERFORMANCE',
+  FUNCTIONALITY: 'FUNCTIONALITY',
+  DATA: 'DATA',
+  OTHER: 'OTHER'
+};
+
+exports.BugReportPriority = exports.$Enums.BugReportPriority = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH'
+};
+
+exports.BugReportStatus = exports.$Enums.BugReportStatus = {
+  NEW: 'NEW',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED'
+};
+
+exports.ChatStatus = exports.$Enums.ChatStatus = {
+  NEW: 'NEW',
+  ACTIVE: 'ACTIVE',
+  CLOSED: 'CLOSED'
+};
+
+exports.HomePageSectionType = exports.$Enums.HomePageSectionType = {
+  QUICK_SERVICES: 'QUICK_SERVICES',
+  SERVICE_CATEGORIES: 'SERVICE_CATEGORIES',
+  SEASONAL_SERVICES: 'SEASONAL_SERVICES',
+  PROMO_SERVICES: 'PROMO_SERVICES'
+};
+
+exports.MasterApplicationStatus = exports.$Enums.MasterApplicationStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED'
+};
+
+exports.OrderStatus = exports.$Enums.OrderStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  ASSIGNED: 'ASSIGNED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED'
+};
+
+exports.OrderUrgency = exports.$Enums.OrderUrgency = {
+  URGENT: 'URGENT',
+  SCHEDULED: 'SCHEDULED'
+};
+
+exports.StepStatus = exports.$Enums.StepStatus = {
+  PENDING: 'PENDING',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED'
+};
+
+exports.ReferralStatus = exports.$Enums.ReferralStatus = {
+  PENDING: 'PENDING',
+  COMPLETED: 'COMPLETED'
+};
+
+exports.UserRole = exports.$Enums.UserRole = {
+  CLIENT: 'CLIENT',
+  MASTER: 'MASTER',
+  ADMIN: 'ADMIN'
+};
 
 exports.Prisma.ModelName = {
-
+  AuthCode: 'AuthCode',
+  BugReport: 'BugReport',
+  BugReportImage: 'BugReportImage',
+  Chat: 'Chat',
+  ChatMessage: 'ChatMessage',
+  City: 'City',
+  HomePageSection: 'HomePageSection',
+  HomePageSectionItem: 'HomePageSectionItem',
+  MasterApplication: 'MasterApplication',
+  Order: 'Order',
+  OrderItem: 'OrderItem',
+  OrderStep: 'OrderStep',
+  PromoCode: 'PromoCode',
+  PromoCodeUsage: 'PromoCodeUsage',
+  Referral: 'Referral',
+  Review: 'Review',
+  ServiceCategory: 'ServiceCategory',
+  Service: 'Service',
+  ServiceCity: 'ServiceCity',
+  Story: 'Story',
+  StoryImage: 'StoryImage',
+  User: 'User'
 };
 
 /**
