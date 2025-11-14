@@ -4,14 +4,16 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionsService } from '../sessions/sessions.service';
 import { SendCodeDto, VerifyCodeDto, RefreshTokenDto } from './dto/auth.dto';
+import { RedisService } from 'src/libs/redis/redis.service';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService,
-    private configService: ConfigService,
-    private sessionsService: SessionsService,
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly redisService: RedisService,
+    private readonly sessionsService: SessionsService,
   ) {}
 
   async sendCode(dto: SendCodeDto) {
@@ -145,7 +147,7 @@ export class AuthService {
           session.lastActivity = Date.now();
           
           const sessionKey = `session:${existingSessionData.sessionId}`;
-          await this.sessionsService.getClient().set(
+          await this.redisService.set(
             sessionKey,
             JSON.stringify(session),
             'EX',
