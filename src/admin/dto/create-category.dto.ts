@@ -20,6 +20,10 @@ export class CreateCategoryDto {
   @IsString()
   @IsOptional()
   image?: string;
+
+  @IsString()
+  @IsOptional()
+  parentId?: string; // ID родительской категории (null для корневых категорий)
 }
 
 

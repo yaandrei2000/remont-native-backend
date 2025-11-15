@@ -7,8 +7,11 @@ export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
 
   @Get('categories')
-  async getCategories(@Query('cityId') cityId?: string) {
-    return this.servicesService.getCategories(cityId);
+  async getCategories(
+    @Query('cityId') cityId?: string,
+    @Query('parentId') parentId?: string,
+  ) {
+    return this.servicesService.getCategories(cityId, parentId);
   }
 
   @Get('categories/:categorySlug')
@@ -17,12 +20,23 @@ export class ServicesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('cityId') cityId?: string,
+    @Query('parentSlug') parentSlug?: string,
   ) {
     const pagination: PaginationDto = {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 10,
     };
-    return this.servicesService.getServicesByCategory(categorySlug, pagination, cityId);
+    return this.servicesService.getServicesByCategory(categorySlug, pagination, cityId, parentSlug);
+  }
+
+  @Get('categories/:parentSlug/:categorySlug/services/:serviceSlug')
+  async getServiceWithParent(
+    @Param('parentSlug') parentSlug: string,
+    @Param('categorySlug') categorySlug: string,
+    @Param('serviceSlug') serviceSlug: string,
+    @Query('cityId') cityId?: string,
+  ) {
+    return this.servicesService.getService(categorySlug, serviceSlug, cityId, parentSlug);
   }
 
   @Get('categories/:categorySlug/services/:serviceSlug')

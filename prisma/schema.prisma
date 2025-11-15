@@ -384,17 +384,22 @@ model Review {
 
 model ServiceCategory {
   id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
+  name        String
+  slug        String
   description String?
   icon        String?
   image       String? // Ссылка на изображение категории
+  parentId    String? // ID родительской категории (null для корневых категорий)
+  parent      ServiceCategory? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    ServiceCategory[] @relation("CategoryHierarchy") // Подкатегории
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   services      Service[]
   homePageItems HomePageSectionItem[]
 
+  @@unique([parentId, slug], name: "category_parent_slug_unique") // Уникальность slug в рамках родительской категории (parentId может быть null)
+  @@index([parentId])
   @@map("service_categories")
 }
 

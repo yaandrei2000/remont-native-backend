@@ -5,80 +5,136 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Создаем категории услуг
-  const plumbingCategory = await prisma.serviceCategory.upsert({
-    where: { slug: 'plumbing' },
-    update: {},
-    create: {
-      name: 'Сантехник',
-      slug: 'plumbing',
-      description: 'Услуги сантехника',
-      icon: 'wrench',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
-    },
+  // Создаем категории услуг (корневые категории)
+  // Используем findFirst + create, так как составной уникальный индекс с null не поддерживается в where
+  let plumbingCategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'plumbing', parentId: null },
   });
+  if (!plumbingCategory) {
+    plumbingCategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Сантехник',
+        slug: 'plumbing',
+        description: 'Услуги сантехника',
+        icon: 'wrench',
+        image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+        parentId: null, // Корневая категория
+      },
+    });
+  }
 
-  const electricalCategory = await prisma.serviceCategory.upsert({
-    where: { slug: 'electrical' },
-    update: {},
-    create: {
-      name: 'Электрик',
-      slug: 'electrical',
-      description: 'Услуги электрика',
-      icon: 'zap',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
-    },
+  let electricalCategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'electrical', parentId: null },
   });
+  if (!electricalCategory) {
+    electricalCategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Электрик',
+        slug: 'electrical',
+        description: 'Услуги электрика',
+        icon: 'zap',
+        image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+        parentId: null, // Корневая категория
+      },
+    });
+  }
 
-  const appliancesCategory = await prisma.serviceCategory.upsert({
-    where: { slug: 'appliances' },
-    update: {},
-    create: {
-      name: 'Ремонт техники',
-      slug: 'appliances',
-      description: 'Ремонт бытовой техники',
-      icon: 'wrench',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
-    },
+  let appliancesCategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'appliances', parentId: null },
   });
+  if (!appliancesCategory) {
+    appliancesCategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Ремонт техники',
+        slug: 'appliances',
+        description: 'Ремонт бытовой техники',
+        icon: 'wrench',
+        image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+        parentId: null, // Корневая категория
+      },
+    });
+  }
 
-  const laptopCategory = await prisma.serviceCategory.upsert({
-    where: { slug: 'laptop' },
-    update: {},
-    create: {
-      name: 'Ноутбук',
-      slug: 'laptop',
-      description: 'Ремонт ноутбуков',
-      icon: 'laptop',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/laptop.jpeg',
-    },
+  let laptopCategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'laptop', parentId: null },
   });
+  if (!laptopCategory) {
+    laptopCategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Ноутбук',
+        slug: 'laptop',
+        description: 'Ремонт ноутбуков',
+        icon: 'laptop',
+        image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/laptop.jpeg',
+        parentId: null, // Корневая категория
+      },
+    });
+  }
 
-  const airConditioningCategory = await prisma.serviceCategory.upsert({
-    where: { slug: 'air-conditioning' },
-    update: {},
-    create: {
-      name: 'Кондиционер',
-      slug: 'air-conditioning',
-      description: 'Ремонт и установка кондиционеров',
-      icon: 'air-vent',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/air-conditioning.jpeg',
-    },
+  let airConditioningCategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'air-conditioning', parentId: null },
   });
+  if (!airConditioningCategory) {
+    airConditioningCategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Кондиционер',
+        slug: 'air-conditioning',
+        description: 'Ремонт и установка кондиционеров',
+        icon: 'air-vent',
+        image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/air-conditioning.jpeg',
+        parentId: null, // Корневая категория
+      },
+    });
+  }
 
-  const coffeeMachineCategory = await prisma.serviceCategory.upsert({
-    where: { slug: 'coffee-machine' },
-    update: {},
-    create: {
-      name: 'Кофемашина',
-      slug: 'coffee-machine',
-      description: 'Ремонт и обслуживание кофемашин',
-      icon: 'coffee',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/coffee-machine.jpeg',
-    },
+  let coffeeMachineCategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'coffee-machine', parentId: null },
   });
+  if (!coffeeMachineCategory) {
+    coffeeMachineCategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Кофемашина',
+        slug: 'coffee-machine',
+        description: 'Ремонт и обслуживание кофемашин',
+        icon: 'coffee',
+        image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/coffee-machine.jpeg',
+        parentId: null, // Корневая категория
+      },
+    });
+  }
 
-  // Создаем услуги
+  // Создаем подкатегории для примера (подкатегории сантехника)
+  let sinkSubcategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'sink', parentId: plumbingCategory.id },
+  });
+  if (!sinkSubcategory) {
+    sinkSubcategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Раковина',
+        slug: 'sink',
+        description: 'Услуги по ремонту и установке раковин',
+        icon: 'droplet',
+        parentId: plumbingCategory.id, // Подкатегория сантехника
+      },
+    });
+  }
+
+  let toiletSubcategory = await prisma.serviceCategory.findFirst({
+    where: { slug: 'toilet', parentId: plumbingCategory.id },
+  });
+  if (!toiletSubcategory) {
+    toiletSubcategory = await prisma.serviceCategory.create({
+      data: {
+        name: 'Унитаз',
+        slug: 'toilet',
+        description: 'Услуги по ремонту и установке унитазов',
+        icon: 'droplet',
+        parentId: plumbingCategory.id, // Подкатегория сантехника
+      },
+    });
+  }
+
+  // Создаем услуги для корневой категории сантехника
   await prisma.service.upsert({
     where: { categoryId_slug: { categoryId: plumbingCategory.id, slug: 'radiator-repair' } },
     update: {},
@@ -104,6 +160,50 @@ async function main() {
       image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/air-conditioning.jpeg',
       time: '3-4 часа',
       categoryId: plumbingCategory.id,
+    },
+  });
+
+  // Создаем услуги для подкатегории "Раковина"
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: sinkSubcategory.id, slug: 'install-siphon' } },
+    update: {},
+    create: {
+      name: 'Установить сифон',
+      slug: 'install-siphon',
+      description: 'Установка и замена сифона под раковиной',
+      price: 1500,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '30-60 мин',
+      categoryId: sinkSubcategory.id,
+    },
+  });
+
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: sinkSubcategory.id, slug: 'replace-faucet' } },
+    update: {},
+    create: {
+      name: 'Заменить смеситель',
+      slug: 'replace-faucet',
+      description: 'Замена смесителя на раковине',
+      price: 2000,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '1-2 часа',
+      categoryId: sinkSubcategory.id,
+    },
+  });
+
+  // Создаем услуги для подкатегории "Унитаз"
+  await prisma.service.upsert({
+    where: { categoryId_slug: { categoryId: toiletSubcategory.id, slug: 'install-toilet' } },
+    update: {},
+    create: {
+      name: 'Установить унитаз',
+      slug: 'install-toilet',
+      description: 'Установка нового унитаза с подключением',
+      price: 3500,
+      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/electrical.jpeg',
+      time: '2-3 часа',
+      categoryId: toiletSubcategory.id,
     },
   });
 
@@ -520,124 +620,124 @@ async function main() {
     });
   }
 
-  // Создаем истории (Stories)
-  const story1 = await prisma.story.create({
-    data: {
-      title: 'Встречайте обновленный ФастСервис',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story1-preview.jpeg',
-      isActive: true,
-      order: 0,
-      images: {
-        create: [
-          {
-            image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=800&fit=crop',
-            title: 'Встречайте обновленный ФастСервис',
-            duration: 15000,
-            order: 0,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
-            title: 'Новые возможности сервиса',
-            duration: 15000,
-            order: 1,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
-            title: 'Улучшенный интерфейс',
-            duration: 15000,
-            order: 2,
-          },
-        ],
-      },
-    },
-  });
+  // // Создаем истории (Stories)
+  // const story1 = await prisma.story.create({
+  //   data: {
+  //     title: 'Встречайте обновленный ФастСервис',
+  //     image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story1-preview.jpeg',
+  //     isActive: true,
+  //     order: 0,
+  //     images: {
+  //       create: [
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=800&fit=crop',
+  //           title: 'Встречайте обновленный ФастСервис',
+  //           duration: 15000,
+  //           order: 0,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
+  //           title: 'Новые возможности сервиса',
+  //           duration: 15000,
+  //           order: 1,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+  //           title: 'Улучшенный интерфейс',
+  //           duration: 15000,
+  //           order: 2,
+  //         },
+  //       ],
+  //     },
+  //   },
+  // });
 
-  const story2 = await prisma.story.create({
-    data: {
-      title: 'Дарим 500 рублей!',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story2-preview.jpeg',
-      isActive: true,
-      order: 1,
-      images: {
-        create: [
-          {
-            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=800&fit=crop',
-            title: 'Дарим 500 рублей!',
-            duration: 15000,
-            order: 0,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
-            title: 'За каждого друга',
-            duration: 15000,
-            order: 1,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
-            title: 'И вам, и другу',
-            duration: 15000,
-            order: 2,
-          },
-        ],
-      },
-    },
-  });
+  // const story2 = await prisma.story.create({
+  //   data: {
+  //     title: 'Дарим 500 рублей!',
+  //     image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story2-preview.jpeg',
+  //     isActive: true,
+  //     order: 1,
+  //     images: {
+  //       create: [
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=800&fit=crop',
+  //           title: 'Дарим 500 рублей!',
+  //           duration: 15000,
+  //           order: 0,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
+  //           title: 'За каждого друга',
+  //           duration: 15000,
+  //           order: 1,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+  //           title: 'И вам, и другу',
+  //           duration: 15000,
+  //           order: 2,
+  //         },
+  //       ],
+  //     },
+  //   },
+  // });
 
-  const story3 = await prisma.story.create({
-    data: {
-      title: 'Через час мастер у вас',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story3-preview.jpeg',
-      isActive: true,
-      order: 2,
-      images: {
-        create: [
-          {
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
-            title: 'Через час мастер у вас',
-            duration: 15000,
-            order: 0,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
-            title: 'Быстрое обслуживание',
-            duration: 15000,
-            order: 1,
-          },
-        ],
-      },
-    },
-  });
+  // const story3 = await prisma.story.create({
+  //   data: {
+  //     title: 'Через час мастер у вас',
+  //     image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story3-preview.jpeg',
+  //     isActive: true,
+  //     order: 2,
+  //     images: {
+  //       create: [
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+  //           title: 'Через час мастер у вас',
+  //           duration: 15000,
+  //           order: 0,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=800&fit=crop',
+  //           title: 'Быстрое обслуживание',
+  //           duration: 15000,
+  //           order: 1,
+  //         },
+  //       ],
+  //     },
+  //   },
+  // });
 
-  const story4 = await prisma.story.create({
-    data: {
-      title: 'Кэшбэк за заказы',
-      image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story4-preview.jpeg',
-      isActive: true,
-      order: 3,
-      images: {
-        create: [
-          {
-            image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=800&fit=crop',
-            title: 'Кэшбэк за заказы',
-            duration: 15000,
-            order: 0,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=800&fit=crop',
-            title: '10% с каждого заказа',
-            duration: 15000,
-            order: 1,
-          },
-          {
-            image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
-            title: 'Накопительные баллы',
-            duration: 15000,
-            order: 2,
-          },
-        ],
-      },
-    },
-  });
+  // const story4 = await prisma.story.create({
+  //   data: {
+  //     title: 'Кэшбэк за заказы',
+  //     image: 'https://s3.twcstorage.ru/c15740f7-42d08c8e-3fac-4d3e-a51e-25c768ace9ff/remont/story4-preview.jpeg',
+  //     isActive: true,
+  //     order: 3,
+  //     images: {
+  //       create: [
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=800&fit=crop',
+  //           title: 'Кэшбэк за заказы',
+  //           duration: 15000,
+  //           order: 0,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&h=800&fit=crop',
+  //           title: '10% с каждого заказа',
+  //           duration: 15000,
+  //           order: 1,
+  //         },
+  //         {
+  //           image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=800&fit=crop',
+  //           title: 'Накопительные баллы',
+  //           duration: 15000,
+  //           order: 2,
+  //         },
+  //       ],
+  //     },
+  //   },
+  // });
 
   console.log('✅ Seeding completed!');
 }

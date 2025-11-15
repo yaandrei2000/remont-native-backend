@@ -144,6 +144,7 @@ export class AdminController {
       description: body.description || undefined,
       icon: body.icon || undefined,
       image: body.image || undefined,
+      parentId: body.parentId || undefined, // ID родительской категории (необязательно)
     };
     return this.adminService.createCategory(dto, image);
   }
@@ -156,12 +157,19 @@ export class AdminController {
     @Body() body: any,
     @UploadedFile() image?: any,
   ) {
+    // Обрабатываем parentId: если передана пустая строка, это означает null (корневая категория)
+    let parentId: string | null | undefined = undefined;
+    if (body.parentId !== undefined) {
+      parentId = body.parentId === '' || body.parentId === null ? null : body.parentId;
+    }
+    
     const dto: UpdateCategoryDto = {
       name: body.name,
       slug: body.slug,
       description: body.description || undefined,
       icon: body.icon || undefined,
       image: body.image || undefined,
+      parentId: parentId, // ID родительской категории (null для корневых)
     };
     return this.adminService.updateCategory(id, dto, image);
   }

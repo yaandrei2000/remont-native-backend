@@ -20,6 +20,10 @@ export class UpdateCategoryDto {
   @IsString()
   @IsOptional()
   image?: string;
+
+  @IsString()
+  @IsOptional()
+  parentId?: string | null; // ID родительской категории (null для корневых категорий)
 }
 
 

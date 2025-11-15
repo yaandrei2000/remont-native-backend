@@ -371,13 +371,32 @@ export class AdminService {
   async getCategories() {
     return this.prisma.serviceCategory.findMany({
       include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+          },
+        },
         _count: {
           select: {
             services: true,
+            children: true,
           },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: [
+        { parentId: 'asc' }, // Сначала корневые категории
+        { name: 'asc' },
+      ],
     });
   }
 
@@ -385,6 +404,20 @@ export class AdminService {
     const category = await this.prisma.serviceCategory.findUnique({
       where: { id: categoryId },
       include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
         services: true,
       },
     });
@@ -397,14 +430,26 @@ export class AdminService {
   }
 
   async createCategory(dto: CreateCategoryDto, imageFile?: any) {
+    // Проверяем уникальность slug в рамках родительской категории
     const existing = await this.prisma.serviceCategory.findFirst({
       where: {
-        OR: [{ slug: dto.slug }, { name: dto.name }],
+        slug: dto.slug,
+        parentId: dto.parentId || null,
       },
     });
 
     if (existing) {
-      throw new BadRequestException('Category with this slug or name already exists');
+      throw new BadRequestException('Category with this slug already exists in this parent category');
+    }
+
+    // Если указан parentId, проверяем что родительская категория существует
+    if (dto.parentId) {
+      const parent = await this.prisma.serviceCategory.findUnique({
+        where: { id: dto.parentId },
+      });
+      if (!parent) {
+        throw new NotFoundException('Parent category not found');
+      }
     }
 
     let imageUrl = dto.image;
@@ -426,8 +471,21 @@ export class AdminService {
 
     return this.prisma.serviceCategory.create({
       data: {
-        ...dto,
+        name: dto.name,
+        slug: dto.slug,
+        description: dto.description,
+        icon: dto.icon,
         image: imageUrl,
+        parentId: dto.parentId || null,
+      },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
   }
@@ -435,29 +493,53 @@ export class AdminService {
   async updateCategory(categoryId: string, dto: UpdateCategoryDto, imageFile?: any) {
     const category = await this.prisma.serviceCategory.findUnique({
       where: { id: categoryId },
+      include: {
+        children: {
+          select: { id: true },
+        },
+      },
     });
 
     if (!category) {
       throw new NotFoundException('Category not found');
     }
 
-    if (dto.slug || dto.name) {
+    // Нельзя сделать категорию родителем самой себя
+    if (dto.parentId === categoryId) {
+      throw new BadRequestException('Category cannot be its own parent');
+    }
+
+    // Нельзя сделать категорию родителем одной из её подкатегорий
+    if (dto.parentId && category.children.length > 0) {
+      const isChild = category.children.some(child => child.id === dto.parentId);
+      if (isChild) {
+        throw new BadRequestException('Cannot set a child category as parent');
+      }
+    }
+
+    // Если указан parentId, проверяем что родительская категория существует
+    if (dto.parentId !== undefined && dto.parentId !== null) {
+      const parent = await this.prisma.serviceCategory.findUnique({
+        where: { id: dto.parentId },
+      });
+      if (!parent) {
+        throw new NotFoundException('Parent category not found');
+      }
+    }
+
+    // Проверяем уникальность slug в рамках родительской категории
+    const parentIdToCheck = dto.parentId !== undefined ? (dto.parentId || null) : category.parentId;
+    if (dto.slug) {
       const existing = await this.prisma.serviceCategory.findFirst({
         where: {
-          AND: [
-            { id: { not: categoryId } },
-            {
-              OR: [
-                ...(dto.slug ? [{ slug: dto.slug }] : []),
-                ...(dto.name ? [{ name: dto.name }] : []),
-              ],
-            },
-          ],
+          slug: dto.slug,
+          parentId: parentIdToCheck,
+          id: { not: categoryId },
         },
       });
 
       if (existing) {
-        throw new BadRequestException('Category with this slug or name already exists');
+        throw new BadRequestException('Category with this slug already exists in this parent category');
       }
     }
 
@@ -491,11 +573,30 @@ export class AdminService {
       imageUrl = baseUrl ? `${baseUrl}/${fileName}` : fileName;
     }
 
+    const updateData: any = {
+      name: dto.name,
+      slug: dto.slug,
+      description: dto.description,
+      icon: dto.icon,
+      image: imageUrl,
+    };
+
+    // Обновляем parentId только если он явно указан
+    if (dto.parentId !== undefined) {
+      updateData.parentId = dto.parentId || null;
+    }
+
     return this.prisma.serviceCategory.update({
       where: { id: categoryId },
-      data: {
-        ...dto,
-        image: imageUrl,
+      data: updateData,
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
       },
     });
   }
