@@ -34,6 +34,11 @@ export class HomePageService {
                 category: {
                   select: {
                     slug: true,
+                    parent: {
+                      select: {
+                        slug: true,
+                      },
+                    },
                   },
                 },
               },
@@ -77,6 +82,11 @@ export class HomePageService {
                 category: {
                   select: {
                     slug: true,
+                    parent: {
+                      select: {
+                        slug: true,
+                      },
+                    },
                   },
                 },
               },
@@ -118,6 +128,11 @@ export class HomePageService {
                 category: {
                   select: {
                     slug: true,
+                    parent: {
+                      select: {
+                        slug: true,
+                      },
+                    },
                   },
                 },
               },
@@ -226,6 +241,11 @@ export class HomePageService {
             category: {
               select: {
                 slug: true,
+                parent: {
+                  select: {
+                    slug: true,
+                  },
+                },
               },
             },
           },
@@ -263,6 +283,11 @@ export class HomePageService {
             category: {
               select: {
                 slug: true,
+                parent: {
+                  select: {
+                    slug: true,
+                  },
+                },
               },
             },
           },

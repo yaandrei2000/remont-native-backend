@@ -6,6 +6,47 @@ import { PaginationDto } from '../common/dto/pagination.dto';
 export class ServicesService {
   constructor(private prisma: PrismaService) {}
 
+  // Рекурсивная функция для получения всех ID подкатегорий
+  private async getAllDescendantCategoryIds(categoryId: string): Promise<string[]> {
+    const children = await this.prisma.serviceCategory.findMany({
+      where: { parentId: categoryId },
+      select: { id: true },
+    });
+
+    const allIds: string[] = [];
+    for (const child of children) {
+      allIds.push(child.id);
+      const grandChildren = await this.getAllDescendantCategoryIds(child.id);
+      allIds.push(...grandChildren);
+    }
+
+    return allIds;
+  }
+
+  // Рекурсивный подсчет услуг в категории и всех её подкатегориях
+  private async countAllServicesInCategory(categoryId: string, cityId?: string): Promise<number> {
+    // Получаем все ID подкатегорий (включая вложенные)
+    const descendantIds = await this.getAllDescendantCategoryIds(categoryId);
+    const allCategoryIds = [categoryId, ...descendantIds];
+
+    // Считаем услуги во всех этих категориях
+    const whereCondition: any = {
+      categoryId: { in: allCategoryIds },
+    };
+
+    if (cityId) {
+      whereCondition.cities = {
+        some: {
+          cityId: cityId,
+        },
+      };
+    }
+
+    return this.prisma.service.count({
+      where: whereCondition,
+    });
+  }
+
   async getCategories(cityId?: string, parentId?: string) {
     // Если указан parentId, возвращаем подкатегории
     if (parentId) {
@@ -13,7 +54,7 @@ export class ServicesService {
       
       if (cityId) {
         // Фильтруем только те подкатегории, у которых есть услуги в этом городе
-        return this.prisma.serviceCategory.findMany({
+        const categories = await this.prisma.serviceCategory.findMany({
           where: {
             ...whereCondition,
             services: {
@@ -46,9 +87,17 @@ export class ServicesService {
             name: 'asc',
           },
         });
+
+        // Рекурсивно подсчитываем услуги для каждой категории
+        for (const category of categories) {
+          const totalServices = await this.countAllServicesInCategory(category.id, cityId);
+          category._count.services = totalServices;
+        }
+
+        return categories;
       }
 
-      return this.prisma.serviceCategory.findMany({
+      const categories = await this.prisma.serviceCategory.findMany({
         where: whereCondition,
         include: {
           _count: {
@@ -62,6 +111,14 @@ export class ServicesService {
           name: 'asc',
         },
       });
+
+      // Рекурсивно подсчитываем услуги для каждой категории
+      for (const category of categories) {
+        const totalServices = await this.countAllServicesInCategory(category.id, cityId);
+        category._count.services = totalServices;
+      }
+
+      return categories;
     }
 
     // Если указан город, показываем только корневые категории (parentId === null), у которых есть услуги в этом городе
@@ -132,11 +189,18 @@ export class ServicesService {
           name: 'asc',
         },
       });
+
+      // Рекурсивно подсчитываем услуги для каждой категории
+      for (const category of categoriesWithServices) {
+        const totalServices = await this.countAllServicesInCategory(category.id, cityId);
+        category._count.services = totalServices;
+      }
+
       return categoriesWithServices;
     }
 
     // Если город не указан, возвращаем все корневые категории
-    return this.prisma.serviceCategory.findMany({
+    const categories = await this.prisma.serviceCategory.findMany({
       where: {
         parentId: null, // Только корневые категории
       },
@@ -152,6 +216,14 @@ export class ServicesService {
         name: 'asc',
       },
     });
+
+    // Рекурсивно подсчитываем услуги для каждой категории
+    for (const category of categories) {
+      const totalServices = await this.countAllServicesInCategory(category.id);
+      category._count.services = totalServices;
+    }
+
+    return categories;
   }
 
   async getServicesByCategory(categorySlug: string, pagination: PaginationDto, cityId?: string, parentSlug?: string) {
@@ -222,7 +294,7 @@ export class ServicesService {
     const skip = (page - 1) * limit;
 
     // Получаем подкатегории и услуги
-    const [subcategories, services, servicesTotal] = await Promise.all([
+    const [subcategoriesRaw, services, servicesTotal] = await Promise.all([
       // Подкатегории
       this.prisma.serviceCategory.findMany({
         where: { parentId: category.id },
@@ -275,6 +347,20 @@ export class ServicesService {
         });
       })(),
     ]);
+
+    // Рекурсивно подсчитываем услуги для каждой подкатегории
+    const subcategories = await Promise.all(
+      subcategoriesRaw.map(async (subcategory) => {
+        const totalServices = await this.countAllServicesInCategory(subcategory.id, cityId);
+        return {
+          ...subcategory,
+          _count: {
+            ...subcategory._count,
+            services: totalServices,
+          },
+        };
+      })
+    );
 
     return {
       category,
