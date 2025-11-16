@@ -158,10 +158,10 @@ export class ServicesService {
     // Если указан parentSlug, ищем подкатегорию в рамках родительской категории
     let category;
     if (parentSlug) {
+      // Ищем родительскую категорию по slug (может быть любого уровня)
       const parentCategory = await this.prisma.serviceCategory.findFirst({
         where: { 
           slug: parentSlug,
-          parentId: null, // Родительская категория должна быть корневой
         },
       });
 
@@ -169,26 +169,48 @@ export class ServicesService {
         throw new NotFoundException('Parent category not found');
       }
 
+      // Ищем категорию с указанным slug и указанным родителем
       category = await this.prisma.serviceCategory.findFirst({
         where: { 
           slug: categorySlug,
           parentId: parentCategory.id,
         },
         include: {
-          parent: true,
+          parent: {
+            include: {
+              parent: true, // Поддержка до 3 уровней вложенности
+            },
+          },
         },
       });
     } else {
       // Ищем категорию по slug (может быть корневой или подкатегорией)
+      // Сначала пробуем найти как корневую
       category = await this.prisma.serviceCategory.findFirst({
         where: { 
           slug: categorySlug,
-          parentId: null, // По умолчанию ищем корневую категорию
+          parentId: null,
         },
         include: {
           parent: true,
         },
       });
+      
+      // Если не нашли как корневую, ищем любую категорию с таким slug
+      if (!category) {
+        category = await this.prisma.serviceCategory.findFirst({
+          where: { 
+            slug: categorySlug,
+          },
+          include: {
+            parent: {
+              include: {
+                parent: true, // Поддержка до 3 уровней вложенности
+              },
+            },
+          },
+        });
+      }
     }
 
     if (!category) {
@@ -318,10 +340,10 @@ export class ServicesService {
     // Если указан parentSlug, ищем подкатегорию в рамках родительской категории
     let category;
     if (parentSlug) {
+      // Ищем родительскую категорию по slug (может быть любого уровня)
       const parentCategory = await this.prisma.serviceCategory.findFirst({
         where: { 
           slug: parentSlug,
-          parentId: null, // Родительская категория должна быть корневой
         },
       });
 
@@ -335,19 +357,41 @@ export class ServicesService {
           parentId: parentCategory.id,
         },
         include: {
-          parent: true,
+          parent: {
+            include: {
+              parent: true, // Поддержка до 3 уровней вложенности
+            },
+          },
         },
       });
     } else {
       // Ищем категорию по slug (может быть корневой или подкатегорией)
+      // Сначала пробуем найти как корневую
       category = await this.prisma.serviceCategory.findFirst({
         where: { 
           slug: categorySlug,
+          parentId: null,
         },
         include: {
           parent: true,
         },
       });
+      
+      // Если не нашли как корневую, ищем любую категорию с таким slug
+      if (!category) {
+        category = await this.prisma.serviceCategory.findFirst({
+          where: { 
+            slug: categorySlug,
+          },
+          include: {
+            parent: {
+              include: {
+                parent: true, // Поддержка до 3 уровней вложенности
+              },
+            },
+          },
+        });
+      }
     }
 
     if (!category) {

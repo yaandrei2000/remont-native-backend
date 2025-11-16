@@ -749,6 +749,11 @@ export class AdminService {
       where: { id: serviceId },
       include: {
         category: true,
+        cities: {
+          select: {
+            cityId: true,
+          },
+        },
       },
     });
 
@@ -1064,6 +1069,52 @@ export class AdminService {
       message: 'Services updated for city',
       cityId,
       serviceIds,
+    };
+  }
+
+  async manageServiceCities(serviceId: string, cityIds: string[]) {
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    // Проверяем существование всех городов
+    const cities = await this.prisma.city.findMany({
+      where: {
+        id: {
+          in: cityIds,
+        },
+      },
+    });
+
+    if (cities.length !== cityIds.length) {
+      throw new BadRequestException('Some cities not found');
+    }
+
+    // Удаляем все существующие связи для этой услуги
+    await this.prisma.serviceCity.deleteMany({
+      where: {
+        serviceId: serviceId,
+      },
+    });
+
+    // Создаем новые связи
+    if (cityIds.length > 0) {
+      await this.prisma.serviceCity.createMany({
+        data: cityIds.map((cityId) => ({
+          serviceId,
+          cityId,
+        })),
+      });
+    }
+
+    return {
+      message: 'Cities updated for service',
+      serviceId,
+      cityIds,
     };
   }
 

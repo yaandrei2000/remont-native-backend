@@ -12,9 +12,11 @@ import {
   UploadedFile,
   UsePipes,
   ValidationPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminService } from './admin.service';
+import { AiService } from './ai.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../auth/admin.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -25,12 +27,16 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { ApproveMasterApplicationDto } from './dto/approve-master-application.dto';
+import { GenerateAiDto } from './dto/generate-ai.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly aiService: AiService,
+  ) {}
 
   // ========== USERS ==========
   @Get('users')
@@ -262,6 +268,14 @@ export class AdminController {
     return this.adminService.manageCityServices(cityId, body.serviceIds);
   }
 
+  @Post('services/:serviceId/cities')
+  async manageServiceCities(
+    @Param('serviceId') serviceId: string,
+    @Body() body: { cityIds: string[] },
+  ) {
+    return this.adminService.manageServiceCities(serviceId, body.cityIds);
+  }
+
   // ========== MASTER APPLICATIONS ==========
   @Get('master-applications')
   async getMasterApplications(
@@ -304,6 +318,20 @@ export class AdminController {
     @CurrentUser() admin: any,
   ) {
     return this.adminService.demoteMaster(id, admin.id);
+  }
+
+  // ========== AI GENERATION ==========
+  @Post('ai/generate')
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async generateAi(@Body() dto: GenerateAiDto) {
+    if (dto.type === 'slug') {
+      const slug = await this.aiService.generateSlug(dto.name);
+      return { result: slug };
+    } else if (dto.type === 'description') {
+      const description = await this.aiService.generateDescription(dto.name, dto.entityType, dto.categories);
+      return { result: description };
+    }
+    throw new BadRequestException('Invalid type');
   }
 
   // ========== STATISTICS ==========
